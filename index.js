@@ -5,6 +5,7 @@ dotenv.config();
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import helmet from "helmet";
+import connectDb from "./config/mongoDbConfig.js";
 
 const app = express();
 app.use(
@@ -30,6 +31,12 @@ app.get("/", (request, response) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is up and running on PORT: ${PORT}`);
-});
+connectDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is up and running on PORT: ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Stopping server, as Mongo Connection was unsuccessful...");
+  });
