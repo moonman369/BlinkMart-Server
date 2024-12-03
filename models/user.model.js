@@ -2,9 +2,13 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    username: {
       type: String,
-      required: [true, "Required field `name` cannot be blank!"],
+      required: [true, "Required field `username` cannot be blank!"],
+    },
+    display_name: {
+      type: String,
+      default: "",
     },
     email: {
       type: String,

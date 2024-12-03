@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import helmet from "helmet";
 import connectDb from "./config/mongoDbConfig.js";
+import userRouter from "./routes/user.route.js";
 
 const app = express();
 app.use(
@@ -30,6 +31,8 @@ app.get("/", (request, response) => {
     message: "Greetings user! Welcome to BlinkMart endpoint!!",
   });
 });
+
+app.use("/api/v1/user", userRouter);
 
 connectDb()
   .then(() => {
