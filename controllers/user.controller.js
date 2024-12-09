@@ -66,7 +66,85 @@ export const registerUserController = async (request, response) => {
         email: dbResponse.email,
         username: dbResponse.username,
       },
+      timestamp: new Date().toISOString(),
     });
+  } catch (error) {
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const verifyUserEmailController = async (request, response) => {
+  try {
+    const { verificationCode } = request.body;
+    const user = UserModel.findOne({ _id: verificationCode });
+
+    if (!user) {
+      return response.status(400).json({
+        errorMessage: "Invalid `verificationCode`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const dbResponse = await UserModel.updateOne(
+      { _id: code },
+      { email_is_verified: true }
+    );
+
+    return response.status(200).json({
+      message: "User email has been verified successfully",
+      success: true,
+      userData: {
+        email: dbResponse.email,
+        username: dbResponse.username,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+//Login Controller
+export const loginUserController = async (request, response) => {
+  try {
+    const { email, password } = request.body;
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      return response.status(400).json({
+        errorMessage: `User with email: "${email}, does not exist!"`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (user.status !== "Active") {
+      return response.status(403).json({
+        errorMessage: `User status is currently ${user.status}. Please contact Admin to activate user..."`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const passwordIsCorrect = await bcryptjs.compare(password, user.password);
+    if (!passwordIsCorrect) {
+      return response.status(401).json({
+        errorMessage: `Incorrect Password!"`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
   } catch (error) {
     return response.status(500).json({
       errorMessage: error.message,
