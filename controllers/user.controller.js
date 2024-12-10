@@ -2,7 +2,10 @@ import bcryptjs from "bcryptjs";
 import UserModel from "../models/user.model.js";
 import sendEmail from "../config/sendEmail.js";
 import getVerifyEmailTemplate from "../utils/verifyEmailTemplate.js";
+import generateTokens from "../utils/generateTokens.js";
+import { isValidObjectId } from "mongoose";
 
+// Register User Controller
 export const registerUserController = async (request, response) => {
   try {
     const { username, email, password } = request.body;
@@ -78,12 +81,11 @@ export const registerUserController = async (request, response) => {
   }
 };
 
+// Verify Email Controller
 export const verifyUserEmailController = async (request, response) => {
   try {
     const { verificationCode } = request.body;
-    const user = UserModel.findOne({ _id: verificationCode });
-
-    if (!user) {
+    if (!isValidObjectId(verificationCode)) {
       return response.status(400).json({
         errorMessage: "Invalid `verificationCode`",
         success: false,
@@ -91,17 +93,27 @@ export const verifyUserEmailController = async (request, response) => {
       });
     }
 
+    const { email_is_verified, email, username } = await UserModel.findById(
+      verificationCode
+    );
+    if (email_is_verified) {
+      return response.status(400).json({
+        errorMessage: "Email is already verified",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
     const dbResponse = await UserModel.updateOne(
-      { _id: code },
+      { _id: verificationCode },
       { email_is_verified: true }
     );
-
+    console.log(dbResponse);
     return response.status(200).json({
       message: "User email has been verified successfully",
       success: true,
       userData: {
-        email: dbResponse.email,
-        username: dbResponse.username,
+        email: email,
+        username: username,
       },
       timestamp: new Date().toISOString(),
     });
@@ -119,11 +131,26 @@ export const verifyUserEmailController = async (request, response) => {
 export const loginUserController = async (request, response) => {
   try {
     const { email, password } = request.body;
-    const user = await UserModel.findOne({ email });
 
-    if (!user) {
+    if (!email) {
       return response.status(400).json({
-        errorMessage: `User with email: "${email}, does not exist!"`,
+        errorMessage: `Please provide email!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!password) {
+      return response.status(400).json({
+        errorMessage: `Please provide password!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: `User with email: '${email}', does not exist!`,
         success: false,
         timestamp: new Date().toISOString(),
       });
@@ -131,7 +158,7 @@ export const loginUserController = async (request, response) => {
 
     if (user.status !== "Active") {
       return response.status(403).json({
-        errorMessage: `User status is currently ${user.status}. Please contact Admin to activate user..."`,
+        errorMessage: `User status is currently ${user.status}. Please contact Admin to activate user...`,
         success: false,
         timestamp: new Date().toISOString(),
       });
@@ -140,11 +167,42 @@ export const loginUserController = async (request, response) => {
     const passwordIsCorrect = await bcryptjs.compare(password, user.password);
     if (!passwordIsCorrect) {
       return response.status(401).json({
-        errorMessage: `Incorrect Password!"`,
+        errorMessage: `Incorrect Password!`,
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
+
+    const accessToken = await generateTokens.generateAccessToken(
+      user._id,
+      user.role
+    );
+    const refreshToken = await generateTokens.generateRefreshToken(
+      user._id,
+      user.role
+    );
+
+    const cookiesOption = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+    };
+    response.cookie("accessToken", accessToken, cookiesOption);
+    response.cookie("refreshToken", refreshToken, cookiesOption);
+
+    return response.status(200).json({
+      message: "User email has been verified successfully",
+      success: true,
+      userData: {
+        email: user.email,
+        username: user.username,
+      },
+      tokens: {
+        access: accessToken,
+        refresh: refreshToken,
+      },
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
     return response.status(500).json({
       errorMessage: error.message,
