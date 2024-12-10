@@ -27,6 +27,7 @@ app.use(
 const PORT = process.env["SERVER.PORT"] || 8080;
 
 app.get("/", (request, response) => {
+  // console.log(request?.cookies["accessToken"]);
   return response.json({
     message: "Greetings user! Welcome to BlinkMart endpoint!!",
   });

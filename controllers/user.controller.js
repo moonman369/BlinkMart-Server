@@ -72,6 +72,7 @@ export const registerUserController = async (request, response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error(error);
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,
@@ -118,6 +119,7 @@ export const verifyUserEmailController = async (request, response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error(error);
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,
@@ -191,7 +193,7 @@ export const loginUserController = async (request, response) => {
     response.cookie("refreshToken", refreshToken, cookiesOption);
 
     return response.status(200).json({
-      message: "User email has been verified successfully",
+      message: "Login successful!",
       success: true,
       userData: {
         email: user.email,
@@ -204,6 +206,47 @@ export const loginUserController = async (request, response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Logout Controller
+export const logoutUserController = async (request, response) => {
+  try {
+    const userId = request.userId;
+    if (!isValidObjectId(userId)) {
+      return response.status(401).json({
+        errorMessage: `Unauthorized Access: Token is invalid`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const cookiesOption = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+    };
+    response.clearCookie("accessToken", cookiesOption);
+    response.clearCookie("refreshToken", cookiesOption);
+
+    const updateDbResponse = await UserModel.findByIdAndUpdate(userId, {
+      refresh_token: "",
+    });
+
+    return response.json({
+      message: "Logout successful!",
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,
