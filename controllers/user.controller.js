@@ -310,3 +310,44 @@ export const setUserAvatarController = async (request, response) => {
     });
   }
 };
+
+// Update User Details Controller
+export const updateUserDetailsController = async (request, response) => {
+  try {
+    const userId = request.userId; // from auth middleware
+    const { username, email, password, mobile } = request.body;
+
+    let hashedPassword = "";
+
+    if (password) {
+      const salt = await bcryptjs.genSalt(10);
+      hashedPassword = await bcryptjs.hash(password, salt);
+    }
+
+    const updateDbResponse = await UserModel.updateOne(
+      { _id: userId },
+      {
+        ...(username && { username: username }),
+        ...(email && { email: email }),
+        ...(password && { password: hashedPassword }),
+        ...(mobile && { mobile: mobile }),
+      }
+    );
+    console.log("Update DB response: \n", updateDbResponse);
+
+    response.status(200).json({
+      message: "Updated user successfully!",
+      userId: userId,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};

@@ -4,6 +4,7 @@ import {
   logoutUserController,
   registerUserController,
   setUserAvatarController,
+  updateUserDetailsController,
   verifyUserEmailController,
 } from "../controllers/user.controller.js";
 import { auth } from "../middleware/auth.js";
@@ -21,5 +22,6 @@ userRouter.put(
   tempStorage.single("avatar"),
   setUserAvatarController
 );
+userRouter.put("/update-details", auth, updateUserDetailsController);
 
 export default userRouter;
