@@ -4,6 +4,8 @@ import sendEmail from "../config/sendEmail.js";
 import getVerifyEmailTemplate from "../utils/verifyEmailTemplate.js";
 import generateTokens from "../utils/generateTokens.js";
 import { isValidObjectId } from "mongoose";
+import uploadImageToCloudinary from "../utils/uploadImage.js";
+import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 
 // Register User Controller
 export const registerUserController = async (request, response) => {
@@ -239,6 +241,7 @@ export const logoutUserController = async (request, response) => {
     const updateDbResponse = await UserModel.findByIdAndUpdate(userId, {
       refresh_token: "",
     });
+    console.log("[DB Update Response]: ", updateDbResponse);
 
     return response.json({
       message: "Logout successful!",
@@ -247,6 +250,58 @@ export const logoutUserController = async (request, response) => {
     });
   } catch (error) {
     console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+//Set User Avatar Controller
+export const setUserAvatarController = async (request, response) => {
+  try {
+    const image = request.file;
+    const userId = request.userId;
+    if (!image) {
+      return response.status(400).json({
+        errorMessage: `Image file not found`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    console.log(`image: `, image);
+    if (!IMAGE_MIMETYPE_LIST.includes(image?.mimetype)) {
+      return response.status(400).json({
+        errorMessage: `Invalid file format! Choose a format from this list: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heif', 'image/heic']`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    const uploadResponse = await uploadImageToCloudinary(image);
+
+    if (!isValidObjectId(userId)) {
+      return response.status(401).json({
+        errorMessage: `Invalid userId!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log("Image Upload Response Cloudinary: \n", uploadResponse);
+    const updateDbResponse = await UserModel.findByIdAndUpdate(userId, {
+      avatar: uploadResponse.url,
+    });
+
+    return response.status(200).json({
+      message: "Successfully set avatar",
+      userId: userId,
+      avatarUrl: uploadResponse.url,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,

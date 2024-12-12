@@ -20,7 +20,7 @@ export const auth = async (request, response, next) => {
       accessToken,
       process.env["SERVER.TOKEN.ACCESS.SECRET_KEY"]
     );
-    console.log(`Decoded JWT Token: ${decodedToken}`);
+    console.log(`Decoded JWT Token: `, decodedToken);
     if (!decodedToken) {
       return response.status(401).json({
         errorMessage: `Unauthorized Access: Token has expired`,
