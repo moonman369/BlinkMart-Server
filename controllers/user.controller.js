@@ -1,11 +1,16 @@
 import bcryptjs from "bcryptjs";
 import UserModel from "../models/user.model.js";
 import sendEmail from "../config/sendEmail.js";
-import getVerifyEmailTemplate from "../utils/verifyEmailTemplate.js";
+import {
+  getVerifyEmailTemplate,
+  getForgotPasswordEmailTemplate,
+} from "../utils/emailTemplates.js";
 import generateTokens from "../utils/generateTokens.js";
 import { isValidObjectId } from "mongoose";
 import uploadImageToCloudinary from "../utils/uploadImage.js";
-import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
+import { IMAGE_MIMETYPE_LIST, MINUTES_TO_MILLIS } from "../utils/constants.js";
+import { response } from "express";
+import { generateOtp } from "../utils/generateOtp.js";
 
 // Register User Controller
 export const registerUserController = async (request, response) => {
@@ -343,6 +348,65 @@ export const updateUserDetailsController = async (request, response) => {
     });
   } catch (error) {
     console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Forgot Password Controller
+export const forgotPasswordController = async (request, response) => {
+  try {
+    const { email } = request.body;
+    if (!email) {
+      return response.status(400).json({
+        errorMessage: `Required field 'email' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: `User with this email was not found`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const otp = generateOtp();
+    const otpValidityDurationInMinutes =
+      process.env["SERVER.OTP.EXPIRY_IN_MIN"] || 10;
+    const otpValidityDurationInMillis =
+      otpValidityDurationInMinutes * MINUTES_TO_MILLIS;
+    const otpExpiryTime = new Date() + otpValidityDurationInMillis;
+
+    const updateDbResponse = await UserModel.findByIdAndUpdate(user._id, {
+      forgot_password_otp: otp,
+      forgot_password_expiry: new Date(otpExpiryTime).toISOString(),
+    });
+
+    await sendEmail({
+      to: email,
+      subject: "One Time Password for changing BlinkMart account password",
+      htmlBody: getForgotPasswordEmailTemplate({
+        username: user.username,
+        otp,
+        otpValidityDurationInMinutes,
+      }),
+    });
+
+    return response.status(200).json({
+      message: "OTP generated and sent to mail",
+      userId: user._id,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,

@@ -10,3 +10,5 @@ export const IMAGE_MIMETYPE_LIST = [
   "image/heif", // HEIF
   "image/heic", // HEIC
 ];
+
+export const MINUTES_TO_MILLIS = 60 * 1000;
