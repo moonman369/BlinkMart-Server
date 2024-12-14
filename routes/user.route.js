@@ -4,8 +4,10 @@ import {
   loginUserController,
   logoutUserController,
   registerUserController,
+  resetPasswordController,
   setUserAvatarController,
   updateUserDetailsController,
+  verifyForgotPasswordOtp,
   verifyUserEmailController,
 } from "../controllers/user.controller.js";
 import { auth } from "../middleware/auth.js";
@@ -25,5 +27,7 @@ userRouter.put(
 );
 userRouter.put("/update-details", auth, updateUserDetailsController);
 userRouter.post("/forgot-password", forgotPasswordController);
+userRouter.post("/verify-forgot-password-otp", verifyForgotPasswordOtp);
+userRouter.put("/reset-password", resetPasswordController);
 
 export default userRouter;

@@ -383,7 +383,9 @@ export const forgotPasswordController = async (request, response) => {
       process.env["SERVER.OTP.EXPIRY_IN_MIN"] || 10;
     const otpValidityDurationInMillis =
       otpValidityDurationInMinutes * MINUTES_TO_MILLIS;
-    const otpExpiryTime = new Date() + otpValidityDurationInMillis;
+    const otpExpiryTime = new Date(
+      new Date().getTime() + otpValidityDurationInMillis
+    );
 
     const updateDbResponse = await UserModel.findByIdAndUpdate(user._id, {
       forgot_password_otp: otp,
@@ -407,6 +409,141 @@ export const forgotPasswordController = async (request, response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Verify Forgot Password OTP
+export const verifyForgotPasswordOtp = async (request, response) => {
+  try {
+    const { email, otp } = request.body;
+    if (!email) {
+      return response.status(400).json({
+        errorMessage: `Required field 'email' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!otp) {
+      return response.status(400).json({
+        errorMessage: `Required field 'otp' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: `User with this email was not found`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log(
+      new Date().toISOString(),
+      new Date(user.forgot_password_expiry).toISOString()
+    );
+    if (
+      new Date().toISOString() >
+      new Date(user.forgot_password_expiry).toISOString()
+    ) {
+      return response.status(401).json({
+        errorMessage: `OTP has expired!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (otp !== user.forgot_password_otp) {
+      return response.status(401).json({
+        errorMessage: `Invalid OTP!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      errorMessage: `OTP has been successfully validated!!`,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Reset Password Controller
+export const resetPasswordController = async (request, response) => {
+  try {
+    const { email, newPassword, confirmNewPassword } = request.body;
+    if (!email) {
+      return response.status(400).json({
+        errorMessage: `Required field 'email' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!newPassword) {
+      return response.status(400).json({
+        errorMessage: `Required field 'newPassword' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!confirmNewPassword) {
+      return response.status(400).json({
+        errorMessage: `Required field 'confirmNewPassword' was not provided`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return response.status(401).json({
+        errorMessage: `'newPassord' and 'confirmNewPassword' values do not match!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: `User with this email was not found`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const salt = await bcryptjs.genSalt(10);
+    const hashedNewPassword = await bcryptjs.hash(newPassword, salt);
+    const updateDbResponse = await UserModel.updateOne(
+      { _id: user._id },
+      {
+        password: hashedNewPassword,
+      }
+    );
+    console.log("Update Password response", updateDbResponse);
+    return response.status(200).json({
+      errorMessage: `Password has been successfully updated!!`,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,
