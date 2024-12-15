@@ -8,9 +8,14 @@ import {
 import generateTokens from "../utils/generateTokens.js";
 import { isValidObjectId } from "mongoose";
 import uploadImageToCloudinary from "../utils/uploadImage.js";
-import { IMAGE_MIMETYPE_LIST, MINUTES_TO_MILLIS } from "../utils/constants.js";
+import {
+  COOKIE_OPTIONS,
+  IMAGE_MIMETYPE_LIST,
+  MINUTES_TO_MILLIS,
+} from "../utils/constants.js";
 import { response } from "express";
 import { generateOtp } from "../utils/generateOtp.js";
+import jwt from "jsonwebtoken";
 
 // Register User Controller
 export const registerUserController = async (request, response) => {
@@ -191,13 +196,8 @@ export const loginUserController = async (request, response) => {
       user.role
     );
 
-    const cookiesOption = {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-    };
-    response.cookie("accessToken", accessToken, cookiesOption);
-    response.cookie("refreshToken", refreshToken, cookiesOption);
+    response.cookie("accessToken", accessToken, COOKIE_OPTIONS);
+    response.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
 
     return response.status(200).json({
       message: "Login successful!",
@@ -539,6 +539,55 @@ export const resetPasswordController = async (request, response) => {
     console.log("Update Password response", updateDbResponse);
     return response.status(200).json({
       errorMessage: `Password has been successfully updated!!`,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+// Refresh Token Controller
+export const refreshTokenController = async (request, response) => {
+  try {
+    const refreshToken =
+      request.cookies?.refreshToken ||
+      request.header?.authorization?.split(" ")[1];
+    if (!refreshToken) {
+      return response.status(401).json({
+        errorMessage: `Unauthorized Access: No Refresh token found`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    console.log(refreshToken);
+
+    const verifyToken = jwt.verify(
+      refreshToken,
+      process.env["SERVER.TOKEN.REFRESH.SECRET_KEY"]
+    );
+    if (!verifyToken) {
+      return response.status(401).json({
+        errorMessage: `Unauthorized Access: Refresh token has expired`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    console.log(verifyToken);
+    const { id, role } = verifyToken;
+    const newAccessToken = await generateTokens.generateAccessToken(id, role);
+    response.cookie("accessToken", newAccessToken, COOKIE_OPTIONS);
+    return response.status(200).json({
+      errorMessage: `New access token has been generated!!`,
+      tokens: {
+        accessToken: newAccessToken,
+      },
       success: true,
       timestamp: new Date().toISOString(),
     });

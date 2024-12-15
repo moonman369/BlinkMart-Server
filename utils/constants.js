@@ -12,3 +12,9 @@ export const IMAGE_MIMETYPE_LIST = [
 ];
 
 export const MINUTES_TO_MILLIS = 60 * 1000;
+
+export const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "None",
+};

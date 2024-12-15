@@ -3,6 +3,7 @@ import {
   forgotPasswordController,
   loginUserController,
   logoutUserController,
+  refreshTokenController,
   registerUserController,
   resetPasswordController,
   setUserAvatarController,
@@ -29,5 +30,6 @@ userRouter.put("/update-details", auth, updateUserDetailsController);
 userRouter.post("/forgot-password", forgotPasswordController);
 userRouter.post("/verify-forgot-password-otp", verifyForgotPasswordOtp);
 userRouter.put("/reset-password", resetPasswordController);
+userRouter.post("/refresh-token", refreshTokenController);
 
 export default userRouter;
