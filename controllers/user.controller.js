@@ -392,7 +392,8 @@ export const forgotPasswordController = async (request, response) => {
       forgot_password_expiry: new Date(otpExpiryTime).toISOString(),
     });
 
-    await sendEmail({
+    const resendResponse = await sendEmail({
+      from: "",
       to: email,
       subject: "One Time Password for changing BlinkMart account password",
       htmlBody: getForgotPasswordEmailTemplate({
@@ -470,7 +471,7 @@ export const verifyForgotPasswordOtp = async (request, response) => {
     }
 
     return response.status(200).json({
-      errorMessage: `OTP has been successfully validated!!`,
+      message: `OTP has been successfully validated!!`,
       success: true,
       timestamp: new Date().toISOString(),
     });
@@ -538,7 +539,7 @@ export const resetPasswordController = async (request, response) => {
     );
     console.log("Update Password response", updateDbResponse);
     return response.status(200).json({
-      errorMessage: `Password has been successfully updated!!`,
+      message: `Password has been successfully updated!!`,
       success: true,
       timestamp: new Date().toISOString(),
     });
@@ -584,7 +585,7 @@ export const refreshTokenController = async (request, response) => {
     const newAccessToken = await generateTokens.generateAccessToken(id, role);
     response.cookie("accessToken", newAccessToken, COOKIE_OPTIONS);
     return response.status(200).json({
-      errorMessage: `New access token has been generated!!`,
+      message: `New access token has been generated!!`,
       tokens: {
         accessToken: newAccessToken,
       },

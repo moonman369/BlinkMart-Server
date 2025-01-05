@@ -11,13 +11,14 @@ const resend = new Resend(process.env["APP.RESEND.API_KEY"]);
 const sendEmail = async ({ to, subject, htmlBody }) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: "BlinkMart <onboarding@resend.dev>",
+      from: "BlinkMart <admin@moonman.in>",
       to: [to],
       subject: subject,
       html: htmlBody,
     });
     if (error) {
-      return console.error({ error });
+      console.error(`Resend API Error: `, { error });
+      return error;
     }
     console.log(data);
     return data;
