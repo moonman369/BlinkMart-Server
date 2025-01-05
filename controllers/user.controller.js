@@ -13,7 +13,6 @@ import {
   IMAGE_MIMETYPE_LIST,
   MINUTES_TO_MILLIS,
 } from "../utils/constants.js";
-import { response } from "express";
 import { generateOtp } from "../utils/generateOtp.js";
 import jwt from "jsonwebtoken";
 
