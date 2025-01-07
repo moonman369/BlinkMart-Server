@@ -226,9 +226,11 @@ export const loginUserController = async (request, response) => {
 export const getUserDetails = async (request, response) => {
   try {
     const userId = request.userId;
-    const user = await UserModel.findById(userId);
+    const maskedUser = await UserModel.findById(userId).select(
+      "-password -refresh_token -wuehdjs"
+    );
 
-    if (!user) {
+    if (!maskedUser) {
       return response.status(404).json({
         errorMessage: `No user was found!`,
         success: false,
@@ -240,7 +242,7 @@ export const getUserDetails = async (request, response) => {
 
     return response.status(200).json({
       message: "Successfully fetched user details!",
-      data: user,
+      data: maskedUser,
       success: true,
       timestamp: new Date().toISOString(),
     });
