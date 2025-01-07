@@ -222,6 +222,39 @@ export const loginUserController = async (request, response) => {
   }
 };
 
+// Get User Details Controller
+export const getUserDetails = async (request, response) => {
+  try {
+    const userId = request.userId;
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: `No user was found!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // const { password, ...maskedUserDetails } = user.;
+
+    return response.status(200).json({
+      message: "Successfully fetched user details!",
+      data: user,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
 // Logout Controller
 export const logoutUserController = async (request, response) => {
   try {
