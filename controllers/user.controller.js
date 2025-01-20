@@ -286,7 +286,7 @@ export const logoutUserController = async (request, response) => {
     });
     console.log("[DB Update Response]: ", updateDbResponse);
 
-    return response.json({
+    return response.status(200).json({
       message: "Logout successful!",
       success: true,
       timestamp: new Date().toISOString(),
