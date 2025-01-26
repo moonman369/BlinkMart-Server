@@ -7,7 +7,6 @@ import {
 } from "../utils/emailTemplates.js";
 import generateTokens from "../utils/generateTokens.js";
 import { isValidObjectId } from "mongoose";
-import uploadImageToCloudinary from "../utils/uploadImage.js";
 import {
   COOKIE_OPTIONS,
   IMAGE_MIMETYPE_LIST,
@@ -15,6 +14,7 @@ import {
 } from "../utils/constants.js";
 import { generateOtp } from "../utils/generateOtp.js";
 import jwt from "jsonwebtoken";
+import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 
 // Register User Controller
 export const registerUserController = async (request, response) => {
