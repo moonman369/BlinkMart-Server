@@ -66,3 +66,38 @@ export const addCategoryController = async (request, response) => {
     });
   }
 };
+
+export const getAllCategoriesController = async (request, response) => {
+  try {
+    const pageSize = request.query.pageSize || 10;
+    const currentPage = request.query.page || 1;
+    const skip = pageSize * (currentPage - 1);
+    const dbResponse = await CategoryModel.find().skip(skip).limit(pageSize);
+    if (!dbResponse) {
+      return response.status(404).json({
+        errorMessage: "No categories found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    console.log("dbResponse", dbResponse);
+    return response.status(200).json({
+      message: "Categories fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      data: dbResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
