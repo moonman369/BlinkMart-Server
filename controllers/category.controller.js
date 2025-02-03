@@ -131,6 +131,9 @@ export const updateCategoryController = async (request, response) => {
       const cloudinaryImageHash = getSHA256(
         (await axios.get(category?.image, { responseType: "arraybuffer" })).data
       );
+      console.log(
+        `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
+      );
       if (requestImageHash === cloudinaryImageHash) {
         return response.status(400).json({
           errorMessage: "New image is identical to existing image",
