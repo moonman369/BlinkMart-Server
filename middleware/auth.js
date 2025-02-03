@@ -16,12 +16,13 @@ export const auth = async (request, response, next) => {
       });
     }
 
-    const decodedToken = await jwt.verify(
-      accessToken,
-      process.env["SERVER.TOKEN.ACCESS.SECRET_KEY"]
-    );
-    console.log(`Decoded JWT Token: `, decodedToken);
-    if (!decodedToken) {
+    let decodedToken;
+    try {
+      decodedToken = await jwt.verify(
+        accessToken,
+        process.env["SERVER.TOKEN.ACCESS.SECRET_KEY"]
+      );
+    } catch (error) {
       return response.status(401).json({
         errorMessage: `Unauthorized Access: Token has expired`,
         success: false,
