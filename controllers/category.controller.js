@@ -4,7 +4,7 @@ import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 import axios from "axios";
 import { getSHA256 } from "../utils/computeHash.js";
-import { get } from "mongoose";
+import { get, isValidObjectId } from "mongoose";
 
 export const addCategoryController = async (request, response) => {
   try {
@@ -106,6 +106,14 @@ export const getAllCategoriesController = async (request, response) => {
 export const updateCategoryController = async (request, response) => {
   try {
     const { categoryId } = request.params;
+    if (!isValidObjectId(categoryId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid Category ID!",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const { name } = request.body;
     const image = request.file;
     if (!name && !image) {
@@ -116,14 +124,20 @@ export const updateCategoryController = async (request, response) => {
       });
     }
     const category = await CategoryModel.findById(categoryId);
+    const categoryUpdateObject = {
+      name: category?.name,
+      image: category?.image,
+    };
+
     if (name) {
       if (name === category.name) {
-        return response.status(400).json({
-          errorMessage: "Category name and image missing!",
+        return response.status(409).json({
+          errorMessage: "New name is identical to existing name",
           success: false,
           timestamp: new Date().toISOString(),
         });
       }
+      categoryUpdateObject.name = name;
     }
 
     if (image) {
@@ -135,16 +149,27 @@ export const updateCategoryController = async (request, response) => {
         `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
       );
       if (requestImageHash === cloudinaryImageHash) {
-        return response.status(400).json({
+        return response.status(409).json({
           errorMessage: "New image is identical to existing image",
           success: false,
           timestamp: new Date().toISOString(),
         });
       }
+
+      const uploadResponse = await uploadImageToCloudinary(image);
+      console.log("Image Upload Response Cloudinary: \n", uploadResponse);
+      categoryUpdateObject.image = uploadResponse?.url;
     }
-    // const update = await CategoryModel.updateOne();
+    const updateResponse = await CategoryModel.updateOne(
+      { _id: categoryId },
+      categoryUpdateObject
+    );
+    console.log("DB Update Response", updateResponse);
     return response.status(200).json({
+      message: "Successfully updated category data",
+      data: updateResponse,
       success: true,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error(error);
