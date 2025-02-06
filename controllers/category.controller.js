@@ -219,6 +219,14 @@ export const deleteCategoryrController = async (request, response) => {
 
     const deleteResponse = await CategoryModel.deleteOne({ _id: categoryId });
     console.log("Delete Response", deleteResponse);
+
+    if (deleteResponse?.deletedCount <= 0) {
+      return response.status(404).json({
+        errorMessage: "Category with given ID was not found!",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
     return response.status(204).json({
       message: "Successfully deleted category!",
       success: true,
