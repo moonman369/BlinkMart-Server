@@ -5,6 +5,8 @@ import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 import axios from "axios";
 import { getSHA256 } from "../utils/computeHash.js";
 import { get, isValidObjectId } from "mongoose";
+import SubCategoryModel from "../models/sub_category.model.js";
+import ProductModel from "../models/product.model.js";
 
 export const addCategoryController = async (request, response) => {
   try {
@@ -170,6 +172,55 @@ export const updateCategoryController = async (request, response) => {
     return response.status(200).json({
       message: "Successfully updated category data",
       data: updateResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      message: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const deleteCategoryrController = async (request, response) => {
+  try {
+    const { categoryId } = request.params;
+    if (!isValidObjectId(categoryId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid Category ID!",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const subCategoryCount = await SubCategoryModel.find({
+      category: {
+        $in: [categoryId],
+      },
+    }).countDocuments();
+
+    const productCount = await ProductModel.find({
+      category: {
+        $in: [categoryId],
+      },
+    }).countDocuments();
+    if (subCategoryCount > 0 || productCount > 0) {
+      return response.status(409).json({
+        errorMessage:
+          "Cannot delete this category as it has listed sub-categories and products under it!",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const deleteResponse = await CategoryModel.deleteOne({ _id: categoryId });
+    console.log("Delete Response", deleteResponse);
+    return response.status(204).json({
+      message: "Successfully deleted category!",
       success: true,
       timestamp: new Date().toISOString(),
     });
