@@ -129,17 +129,15 @@ export const updateCategoryController = async (request, response) => {
       image: category?.image,
     };
 
+    let nameUpdated = false;
     if (name) {
-      if (name === category.name) {
-        return response.status(409).json({
-          errorMessage: "New name is identical to existing name",
-          success: false,
-          timestamp: new Date().toISOString(),
-        });
+      if (name !== category?.name) {
+        categoryUpdateObject.name = name;
+        nameUpdated = true;
       }
-      categoryUpdateObject.name = name;
     }
 
+    let imageUpdated = false;
     if (image) {
       const requestImageHash = getSHA256(image?.buffer);
       const cloudinaryImageHash = getSHA256(
@@ -148,18 +146,22 @@ export const updateCategoryController = async (request, response) => {
       console.log(
         `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
       );
-      if (requestImageHash === cloudinaryImageHash) {
-        return response.status(409).json({
-          errorMessage: "New image is identical to existing image",
-          success: false,
-          timestamp: new Date().toISOString(),
-        });
+      if (requestImageHash !== cloudinaryImageHash) {
+        const uploadResponse = await uploadImageToCloudinary(image);
+        console.log("Image Upload Response Cloudinary: \n", uploadResponse);
+        categoryUpdateObject.image = uploadResponse?.url;
+        imageUpdated = true;
       }
-
-      const uploadResponse = await uploadImageToCloudinary(image);
-      console.log("Image Upload Response Cloudinary: \n", uploadResponse);
-      categoryUpdateObject.image = uploadResponse?.url;
     }
+
+    if (!nameUpdated && !imageUpdated) {
+      return response.status(409).json({
+        errorMessage: "New data identical to saved data",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const updateResponse = await CategoryModel.updateOne(
       { _id: categoryId },
       categoryUpdateObject
