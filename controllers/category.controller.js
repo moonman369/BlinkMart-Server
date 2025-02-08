@@ -75,7 +75,10 @@ export const getAllCategoriesController = async (request, response) => {
     const pageSize = Number(request.query.pageSize) || 10;
     const currentPage = Number(request.query.currentPage) || 1;
     const skip = pageSize * (currentPage - 1);
-    const dbResponse = await CategoryModel.find().skip(skip).limit(pageSize);
+    const dbResponse = await CategoryModel.find()
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createdAt: -1 });
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No categories found",
