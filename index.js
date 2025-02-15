@@ -8,6 +8,7 @@ import helmet from "helmet";
 import connectDb from "./config/mongoDbConfig.js";
 import userRouter from "./routes/user.route.js";
 import categoryRouter from "./routes/category.route.js";
+import subCategoryRouter from "./routes/subcategory.route.js";
 
 const app = express();
 app.use(
@@ -36,6 +37,7 @@ app.get("/", (request, response) => {
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/category", categoryRouter);
+app.use("/api/v1/subcategory", subCategoryRouter);
 
 connectDb()
   .then(() => {

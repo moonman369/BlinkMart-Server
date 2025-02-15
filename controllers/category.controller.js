@@ -1,10 +1,9 @@
-import e from "express";
 import CategoryModel from "../models/category.model.js";
 import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 import axios from "axios";
 import { getSHA256 } from "../utils/computeHash.js";
-import { get, isValidObjectId } from "mongoose";
+import { isValidObjectId } from "mongoose";
 import SubCategoryModel from "../models/sub_category.model.js";
 import ProductModel from "../models/product.model.js";
 
