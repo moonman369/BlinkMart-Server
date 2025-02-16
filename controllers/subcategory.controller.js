@@ -30,12 +30,32 @@ export const addSubcategoryController = async (request, response) => {
       });
     }
 
-    if (categories.length === 0) {
+    const categoriesArray = JSON.parse(categories);
+    if (!Array.isArray(categoriesArray)) {
+      return response.status(400).json({
+        errorMessage: "Categories must be an array",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (categoriesArray.length === 0) {
       return response.status(400).json({
         errorMessage: "Categories cannot be empty",
         success: false,
         timestamp: new Date().toISOString(),
       });
+    }
+
+    // console.log("categories", categoriesArray);
+    for (let i = 0; i < categoriesArray.length; i++) {
+      if (!isValidObjectId(categoriesArray[i])) {
+        return response.status(400).json({
+          errorMessage: `Invalid Category ID: ${categoriesArray[i]}; At Position: ${i}`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     let uploadedImageUrl = "";
@@ -55,7 +75,7 @@ export const addSubcategoryController = async (request, response) => {
 
     const newSubcategory = new SubCategoryModel({
       name,
-      category: categories,
+      category: categoriesArray,
       image: uploadedImageUrl,
     });
     const dbResponse = await newSubcategory.save();
@@ -70,7 +90,34 @@ export const addSubcategoryController = async (request, response) => {
 
     return response.status(201).json({
       message: "Category added successfully",
-      data: newCategory,
+      data: newSubcategory,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const getSubcategoriesController = async (request, response) => {
+  try {
+    const dbResponse = await SubCategoryModel.find({}).populate("category");
+    if (!dbResponse) {
+      return response.status(404).json({
+        errorMessage: "No subcategories found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      data: dbResponse,
       success: true,
       timestamp: new Date().toISOString(),
     });
