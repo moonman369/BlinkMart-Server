@@ -91,6 +91,7 @@ export const getAllCategoriesController = async (request, response) => {
       message: "Categories fetched successfully",
       pageSize,
       currentPage: currentPage,
+      count: dbResponse.length,
       data: dbResponse,
       success: true,
       timestamp: new Date().toISOString(),

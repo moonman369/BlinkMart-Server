@@ -82,14 +82,14 @@ export const addSubcategoryController = async (request, response) => {
     console.log("dbResponse", dbResponse);
     if (!dbResponse) {
       return response.status(500).json({
-        errorMessage: "Failed to save category to database",
+        errorMessage: "Failed to save subcategory to database",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
 
     return response.status(201).json({
-      message: "Category added successfully",
+      message: "Subcategory added successfully!",
       data: newSubcategory,
       success: true,
       timestamp: new Date().toISOString(),
@@ -107,7 +107,14 @@ export const addSubcategoryController = async (request, response) => {
 
 export const getSubcategoriesController = async (request, response) => {
   try {
-    const dbResponse = await SubCategoryModel.find({}).populate("category");
+    const pageSize = Number(request.query.pageSize) || 10;
+    const currentPage = Number(request.query.currentPage) || 1;
+    const skip = pageSize * (currentPage - 1);
+    const dbResponse = await SubCategoryModel.find()
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createdAt: -1 })
+      .populate("category");
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No subcategories found",
@@ -117,6 +124,10 @@ export const getSubcategoriesController = async (request, response) => {
     }
 
     return response.status(200).json({
+      message: "Categories fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      count: dbResponse.length,
       data: dbResponse,
       success: true,
       timestamp: new Date().toISOString(),
