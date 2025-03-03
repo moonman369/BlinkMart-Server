@@ -144,6 +144,14 @@ export const updateCategoryController = async (request, response) => {
 
     let imageUpdated = false;
     if (image) {
+      if (!IMAGE_MIMETYPE_LIST.includes(image?.mimetype)) {
+        return response.status(400).json({
+          errorMessage: `Invalid file format! Choose a format from this list: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heif', 'image/heic']`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       const requestImageHash = getSHA256(image?.buffer);
       const cloudinaryImageHash = getSHA256(
         (await axios.get(category?.image, { responseType: "arraybuffer" })).data

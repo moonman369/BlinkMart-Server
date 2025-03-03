@@ -5,6 +5,7 @@ import tempStorage from "../middleware/multer.js";
 import {
   addSubcategoryController,
   getSubcategoriesController,
+  updateSubcategoryController,
 } from "../controllers/subcategory.controller.js";
 
 const subCategoryRouter = Router();
@@ -19,6 +20,12 @@ subCategoryRouter.get(
   "/get-all-subcategories",
   auth,
   getSubcategoriesController
+);
+subCategoryRouter.put(
+  "/update-subcategory/:subcategoryId",
+  auth,
+  tempStorage.single("image"),
+  updateSubcategoryController
 );
 
 export default subCategoryRouter;
