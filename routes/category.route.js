@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   addCategoryController,
-  deleteCategoryrController,
+  deleteCategoryController,
   getAllCategoriesController,
   updateCategoryController,
 } from "../controllers/category.controller.js";
@@ -26,7 +26,7 @@ categoryRouter.put(
 categoryRouter.delete(
   "/delete-category/:categoryId",
   auth,
-  deleteCategoryrController
+  deleteCategoryController
 );
 
 export default categoryRouter;

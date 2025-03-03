@@ -189,7 +189,7 @@ export const updateCategoryController = async (request, response) => {
   }
 };
 
-export const deleteCategoryrController = async (request, response) => {
+export const deleteCategoryController = async (request, response) => {
   try {
     const { categoryId } = request.params;
     if (!isValidObjectId(categoryId)) {
