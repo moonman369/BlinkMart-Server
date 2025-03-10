@@ -4,6 +4,7 @@ import { auth } from "../middleware/auth.js";
 import tempStorage from "../middleware/multer.js";
 import {
   addSubcategoryController,
+  deleteSubcategoryController,
   getSubcategoriesController,
   updateSubcategoryController,
 } from "../controllers/subcategory.controller.js";
@@ -26,6 +27,11 @@ subCategoryRouter.put(
   auth,
   tempStorage.single("image"),
   updateSubcategoryController
+);
+subCategoryRouter.delete(
+  "/delete-subcategory/:subcategoryId",
+  auth,
+  deleteSubcategoryController
 );
 
 export default subCategoryRouter;

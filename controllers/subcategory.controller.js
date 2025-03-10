@@ -236,7 +236,8 @@ export const updateSubcategoryController = async (request, response) => {
 
       const requestImageHash = getSHA256(image?.buffer);
       const cloudinaryImageHash = getSHA256(
-        (await axios.get(category?.image, { responseType: "arraybuffer" })).data
+        (await axios.get(subcategory?.image, { responseType: "arraybuffer" }))
+          .data
       );
       console.log(
         `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
@@ -257,6 +258,8 @@ export const updateSubcategoryController = async (request, response) => {
       });
     }
 
+    await subcategory.save();
+
     return response.status(200).json({
       message: "Subcategory updated successfully",
       data: subcategory,
@@ -265,6 +268,69 @@ export const updateSubcategoryController = async (request, response) => {
     });
   } catch (error) {
     console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const deleteSubcategoryController = async (request, response) => {
+  try {
+    const { subcategoryId } = request.params;
+    if (!subcategoryId) {
+      return response.status(400).json({
+        errorMessage: "Missing required field `id`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!isValidObjectId(subcategoryId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid Category ID!",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const subcategory = await SubCategoryModel.findById(subcategoryId);
+    if (!subcategory) {
+      return response.status(404).json({
+        errorMessage: "Subcategory not found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const products = await ProductModel.find({ subcategory: subcategoryId });
+    if (products.length > 0) {
+      return response.status(409).json({
+        errorMessage:
+          "Subcategory has products associated with it. Please delete the products first",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const dbResponse = await SubCategoryModel.deleteOne({ _id: subcategoryId });
+    if (!dbResponse) {
+      return response.status(500).json({
+        errorMessage: "Failed to delete subcategory from database",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      message: "Subcategory deleted successfully",
+      data: dbResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
     return response.status(500).json({
       errorMessage: error.message,
       errorDetails: error,
