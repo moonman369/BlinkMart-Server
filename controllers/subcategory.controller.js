@@ -115,6 +115,7 @@ export const getSubcategoriesController = async (request, response) => {
       .limit(pageSize)
       .sort({ createdAt: -1 })
       .populate("category");
+    const totalRecordCount = await SubCategoryModel.countDocuments();
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No subcategories found",
@@ -128,6 +129,7 @@ export const getSubcategoriesController = async (request, response) => {
       pageSize,
       currentPage: currentPage,
       count: dbResponse.length,
+      totalCount: totalRecordCount,
       data: dbResponse,
       success: true,
       timestamp: new Date().toISOString(),

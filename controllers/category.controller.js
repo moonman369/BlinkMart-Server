@@ -78,6 +78,7 @@ export const getAllCategoriesController = async (request, response) => {
       .skip(skip)
       .limit(pageSize)
       .sort({ createdAt: -1 });
+    const totalRecordCount = await CategoryModel.countDocuments();
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No categories found",
@@ -92,6 +93,7 @@ export const getAllCategoriesController = async (request, response) => {
       pageSize,
       currentPage: currentPage,
       count: dbResponse.length,
+      totalCount: totalRecordCount,
       data: dbResponse,
       success: true,
       timestamp: new Date().toISOString(),
