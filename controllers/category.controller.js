@@ -71,6 +71,26 @@ export const addCategoryController = async (request, response) => {
 export const getAllCategoriesController = async (request, response) => {
   try {
     console.log(request.query);
+    if (request.query?.all) {
+      const dbResponse = await CategoryModel.find().sort({ createdAt: -1 });
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: "No categories found",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      console.log("dbResponse", dbResponse);
+      return response.status(200).json({
+        message: "Categories fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const pageSize = Number(request.query.pageSize) || 10;
     const currentPage = Number(request.query.currentPage) || 1;
     const skip = pageSize * (currentPage - 1);
