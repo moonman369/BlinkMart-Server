@@ -107,6 +107,26 @@ export const addSubcategoryController = async (request, response) => {
 
 export const getSubcategoriesController = async (request, response) => {
   try {
+    if (request.query?.all) {
+      const dbResponse = await SubCategoryModel.find()
+        .sort({ createdAt: -1 })
+        .populate("category");
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: "No subcategories found",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return response.status(200).json({
+        message: "Subcategories fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
     const pageSize = Number(request.query.pageSize) || 10;
     const currentPage = Number(request.query.currentPage) || 1;
     const skip = pageSize * (currentPage - 1);
