@@ -418,7 +418,7 @@ export const forgotPasswordController = async (request, response) => {
 
     const otp = generateOtp();
     const otpValidityDurationInMinutes =
-      process.env["SERVER.OTP.EXPIRY_IN_MIN"] || 10;
+      process.env["SERVER_OTP_EXPIRY_IN_MIN"] || 10;
     const otpValidityDurationInMillis =
       otpValidityDurationInMinutes * MINUTES_TO_MILLIS;
     const otpExpiryTime = new Date(

@@ -20,7 +20,7 @@ export const auth = async (request, response, next) => {
     try {
       decodedToken = await jwt.verify(
         accessToken,
-        process.env["SERVER.TOKEN.ACCESS.SECRET_KEY"]
+        process.env["SERVER_TOKEN_ACCESS_SECRET_KEY"]
       );
     } catch (error) {
       return response.status(401).json({

@@ -2,11 +2,11 @@ import { Resend } from "resend";
 import dotenv from "dotenv";
 dotenv.config();
 
-if (!process.env["APP.RESEND.API_KEY"]) {
-  console.error("Unable to find property: `APP.RESEND.API_KEY` in .env file");
+if (!process.env["APP_RESEND_API_KEY"]) {
+  console.error("Unable to find property: `APP_RESEND_API_KEY` in .env file");
 }
 
-const resend = new Resend(process.env["APP.RESEND.API_KEY"]);
+const resend = new Resend(process.env["APP_RESEND_API_KEY"]);
 
 const sendEmail = async ({ to, subject, htmlBody }) => {
   try {
