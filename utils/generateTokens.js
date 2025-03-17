@@ -4,9 +4,9 @@ import UserModel from "../models/user.model.js";
 const generateAccessToken = async (userId, role) => {
   const token = await jwt.sign(
     { id: userId, role: role },
-    process.env["SERVER.TOKEN.ACCESS.SECRET_KEY"],
+    process.env["SERVER_TOKEN_ACCESS_SECRET_KEY"],
     {
-      expiresIn: process.env["SERVER.TOKEN.ACCESS.TTL"],
+      expiresIn: process.env["SERVER_TOKEN_ACCESS_TTL"],
     }
   );
 
@@ -16,9 +16,9 @@ const generateAccessToken = async (userId, role) => {
 const generateRefreshToken = async (userId, role) => {
   const token = await jwt.sign(
     { id: userId, role: role },
-    process.env["SERVER.TOKEN.REFRESH.SECRET_KEY"],
+    process.env["SERVER_TOKEN_REFRESH_SECRET_KEY"],
     {
-      expiresIn: process.env["SERVER.TOKEN.REFRESH.TTL"],
+      expiresIn: process.env["SERVER_TOKEN_REFRESH_TTL"],
     }
   );
 

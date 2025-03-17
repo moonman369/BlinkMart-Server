@@ -14,7 +14,7 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: process.env["FRONTEND.ORIGIN"] ?? "*",
+    origin: process.env["FRONTEND_ORIGIN"] ?? "*",
   })
 );
 app.use(express.json());
@@ -26,7 +26,7 @@ app.use(
   })
 );
 
-const PORT = process.env["SERVER.PORT"] || 8080;
+const PORT = process.env["SERVER_PORT"] || 8080;
 
 app.get("/", (request, response) => {
   // console.log(request?.cookies["accessToken"]);

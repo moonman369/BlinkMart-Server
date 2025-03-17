@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 dotenv.config();
 
-const MONGO_URI = process.env["APP.DB.MONGO_URI"];
-const DB_NAME = process.env["APP.DB.NAME"];
+const MONGO_URI = process.env["APP_DB_MONGO_URI"];
+const DB_NAME = process.env["APP_DB_NAME"];
 
 if (!MONGO_URI) {
   throw new Error("MongoDB URI not found!!");
