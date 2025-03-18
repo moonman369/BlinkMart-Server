@@ -1,4 +1,5 @@
 import ProductModel from "../models/product.model.js";
+import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 
 export const addProductController = async (request, response) => {
@@ -14,6 +15,7 @@ export const addProductController = async (request, response) => {
       discount,
       description,
       more_details,
+      publish,
     } = request.body;
 
     if (
@@ -85,14 +87,15 @@ export const addProductController = async (request, response) => {
     const newProduct = new ProductModel({
       name,
       image: imageUrlsArray,
-      categories: categoriesArray,
-      subcategories: subcategoriesArray,
+      category_id: categoriesArray,
+      sub_category_id: subcategoriesArray,
       unit,
       stock,
       price,
       discount,
       description,
       more_details: moreDetailsObject,
+      publish: publish || true,
     });
     const savedProduct = await newProduct.save();
     console.log("Saved Product: ", savedProduct);
