@@ -6,7 +6,6 @@ export const addProductController = async (request, response) => {
   try {
     const {
       name,
-      image,
       categories,
       subcategories,
       unit,
@@ -17,10 +16,11 @@ export const addProductController = async (request, response) => {
       more_details,
       publish,
     } = request.body;
+    const images = request?.files;
 
     if (
       !name ||
-      !image ||
+      !images ||
       !categories ||
       !subcategories ||
       !unit ||
@@ -28,41 +28,56 @@ export const addProductController = async (request, response) => {
       !price ||
       !description
     ) {
+      console.log("Images: ", request["files"]);
+      const missingErrorString = "";
+      Object.keys(request.body).forEach((key) => {
+        if (!request.body[key]) {
+          console.error(`Missing required field: ${key}`);
+          missingErrorString += `Missing required field: ${key}`;
+        }
+      });
+      if (!request?.files) {
+        console.error("Missing required field: images");
+        missingErrorString += ", Missing required field: images";
+      }
       return response.status(400).json({
         errorMessage:
-          "Missing one or more required fields: [name, image, categories, subcategories, unit, stock, price, description]",
+          "Missing one or more required fields: [name, image, categories, subcategories, unit, stock, price, description]\n`Missing required field: ${key}`",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
 
-    const imageArray = JSON.parse(image);
-    if (!Array.isArray(imageArray) || imageArray.length === 0) {
+    if (!Array.isArray(images) || images.length === 0) {
       return response.status(400).json({
         errorMessage: "Field `image` should be an non-empty array",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
-    const imageUrlsArray = imageArray.map(async (image, index) => {
+
+    let imageUrlsArray = [];
+    for (let image of images) {
       try {
         if (image && image !== "" && image != null) {
           if (!IMAGE_MIMETYPE_LIST.includes(image?.mimetype)) {
             console.error(
-              `Invalid file format at index ${index}! Choose a format from this list: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heif', 'image/heic']`
+              `Invalid file format ${image?.mimetype} at index ${index}! Choose a format from this list: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heif', 'image/heic']`
             );
-            return "";
+            continue;
           }
           const uploadResponse = await uploadImageToCloudinary(image);
-          uploadedImageUrl = uploadResponse?.url;
           console.log("Image Upload Response Cloudinary: \n", uploadResponse);
-          return uploadedImageUrl;
+          imageUrlsArray.push(uploadResponse?.url);
         }
       } catch (error) {
         console.error("Error uploading image to Cloudinary: ", error);
-        return "";
+        continue;
       }
-    });
+    }
+    // const imageUrlsArray = images.map(async (image, index) => {
+
+    // });
 
     const categoriesArray = JSON.parse(categories);
     if (!Array.isArray(categoriesArray) || categoriesArray.length === 0) {
