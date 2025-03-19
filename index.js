@@ -18,6 +18,7 @@ app.use(
     origin: process.env["FRONTEND_ORIGIN"] ?? "*",
   })
 );
+app.options("*", cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("combined"));
