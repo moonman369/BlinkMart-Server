@@ -8,7 +8,7 @@ const productRouter = Router();
 productRouter.post(
   "/add-product",
   auth,
-  tempStorage.single("image"),
+  tempStorage.array("images"),
   addProductController
 );
 
