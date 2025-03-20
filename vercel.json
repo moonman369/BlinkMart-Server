@@ -18,6 +18,10 @@
     {
       "src": "/api/v1/subcategory/(.*)",
       "dest": "/index.js"
+    },
+    {
+      "src": "/api/v1/product/(.*)",
+      "dest": "/index.js"
     }
   ]
 }
