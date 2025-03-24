@@ -1,6 +1,8 @@
+import { response } from "express";
 import ProductModel from "../models/product.model.js";
 import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
+import { query } from "express";
 
 export const addProductController = async (request, response) => {
   try {
@@ -119,6 +121,80 @@ export const addProductController = async (request, response) => {
       success: true,
       message: "Product added successfully",
       product: savedProduct,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const getProductsController = async (request, response) => {
+  try {
+    if (request?.query?.all) {
+      const dbResponse = await ProductModel.find().sort({ createdAt: -1 });
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: "No products found",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return response.status(200).json({
+        message: "Products fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const pageSize = Number(request.query.pageSize) || 10;
+    const currentPage = Number(request.query.currentPage) || 1;
+    const skip = pageSize * (currentPage - 1);
+
+    const search = request?.query?.search;
+    console.log(search);
+    const searchQuery = search
+      ? {
+          $text: {
+            $search: search,
+          },
+        }
+      : {};
+
+    const [dbResponse, totalRecordCount] = await Promise.all([
+      ProductModel.find(searchQuery)
+        .skip(skip)
+        .limit(pageSize)
+        .sort({ createdAt: -1 }),
+      ProductModel.countDocuments(searchQuery),
+    ]);
+
+    // const dbResponse = await
+    // const totalRecordCount = await
+    if (!dbResponse) {
+      return response.status(404).json({
+        errorMessage: "No products found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      message: "Products fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      count: dbResponse.length,
+      totalCount: totalRecordCount,
+      data: dbResponse,
+      success: true,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
