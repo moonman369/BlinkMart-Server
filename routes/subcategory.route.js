@@ -5,6 +5,7 @@ import tempStorage from "../middleware/multer.js";
 import {
   addSubcategoryController,
   deleteSubcategoryController,
+  getAllCategoriesByCategoryController,
   getSubcategoriesController,
   updateSubcategoryController,
 } from "../controllers/subcategory.controller.js";
@@ -21,6 +22,11 @@ subCategoryRouter.get(
   "/get-all-subcategories",
   auth,
   getSubcategoriesController
+);
+subCategoryRouter.get(
+  "/get-subcategories-by-category",
+  auth,
+  getAllCategoriesByCategoryController
 );
 subCategoryRouter.put(
   "/update-subcategory/:subcategoryId",
