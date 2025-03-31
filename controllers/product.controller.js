@@ -1,4 +1,4 @@
-import { response } from "express";
+import { request, response } from "express";
 import ProductModel from "../models/product.model.js";
 import { IMAGE_MIMETYPE_LIST } from "../utils/constants.js";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
@@ -182,6 +182,62 @@ export const getProductsController = async (request, response) => {
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No products found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      message: "Products fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      count: dbResponse.length,
+      totalCount: totalRecordCount,
+      data: dbResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const getProductsByCategoryController = async (request, response) => {
+  try {
+    const { categoryId } = request.query;
+    if (!categoryId) {
+      return response.status(400).json({
+        errorMessage: "Missing required parameter `categoryId`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const pageSize = Number(request.query.pageSize) || 20;
+    const currentPage = Number(request.query.currentPage) || 1;
+    const skip = pageSize * (currentPage - 1);
+    const [dbResponse, totalRecordCount] = await Promise.all([
+      ProductModel.find({
+        category_id: { $in: categoryId },
+      })
+        .skip(skip)
+        .limit(pageSize)
+        .sort({ createdAt: -1 }),
+
+      ProductModel.find({
+        category_id: { $in: categoryId },
+      }).countDocuments(),
+    ]);
+
+    if (!dbResponse) {
+      return response.status(404).json({
+        errorMessage: `No products found under categoryId: ${categoryId}`,
         success: false,
         timestamp: new Date().toISOString(),
       });

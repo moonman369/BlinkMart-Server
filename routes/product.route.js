@@ -3,6 +3,7 @@ import { auth } from "../middleware/auth.js";
 import tempStorage from "../middleware/multer.js";
 import {
   addProductController,
+  getProductsByCategoryController,
   getProductsController,
 } from "../controllers/product.controller.js";
 
@@ -14,6 +15,6 @@ productRouter.post(
   tempStorage.array("images"),
   addProductController
 );
-productRouter.get("/get-products", auth, getProductsController);
-
+productRouter.get("/get-products", getProductsController);
+productRouter.get("/get-products-by-category", getProductsByCategoryController);
 export default productRouter;

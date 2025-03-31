@@ -6,6 +6,7 @@ import { getSHA256 } from "../utils/computeHash.js";
 import { isValidObjectId } from "mongoose";
 import SubCategoryModel from "../models/sub_category.model.js";
 import ProductModel from "../models/product.model.js";
+import { request, response } from "express";
 
 export const addSubcategoryController = async (request, response) => {
   try {
@@ -131,6 +132,77 @@ export const getSubcategoriesController = async (request, response) => {
     const currentPage = Number(request.query.currentPage) || 1;
     const skip = pageSize * (currentPage - 1);
     const dbResponse = await SubCategoryModel.find()
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createdAt: -1 })
+      .populate("category");
+    const totalRecordCount = await SubCategoryModel.countDocuments();
+    if (!dbResponse) {
+      return response.status(404).json({
+        errorMessage: "No subcategories found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      message: "Categories fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      count: dbResponse.length,
+      totalCount: totalRecordCount,
+      data: dbResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const getAllCategoriesByCategoryController = async (
+  request,
+  response
+) => {
+  try {
+    const categoryId = request.query?.categoryId;
+    if (!categoryId) {
+      return response.status(400).json({
+        errorMessage: "Missing required parameter `categoryId`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (request.query?.all) {
+      const dbResponse = await SubCategoryModel.find({ category: categoryId })
+        .sort({ createdAt: -1 })
+        .populate("category");
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: "No subcategories found",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return response.status(200).json({
+        message: "Subcategories fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    const pageSize = Number(request.query.pageSize) || 10;
+    const currentPage = Number(request.query.currentPage) || 1;
+    const skip = pageSize * (currentPage - 1);
+    const dbResponse = await SubCategoryModel.find({ categoryId: categoryId })
       .skip(skip)
       .limit(pageSize)
       .sort({ createdAt: -1 })
