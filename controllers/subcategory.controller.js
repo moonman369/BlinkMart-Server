@@ -48,6 +48,15 @@ export const addSubcategoryController = async (request, response) => {
       });
     }
 
+    const subCategory = SubCategoryModel.find({ name: name });
+    if (subCategory) {
+      return response.status(409).json({
+        errorMessage: `Subcategory with this name already exists!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     // console.log("categories", categoriesArray);
     for (let i = 0; i < categoriesArray.length; i++) {
       if (!isValidObjectId(categoriesArray[i])) {
