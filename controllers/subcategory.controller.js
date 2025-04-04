@@ -48,8 +48,8 @@ export const addSubcategoryController = async (request, response) => {
       });
     }
 
-    const subCategory = SubCategoryModel.find({ name: name });
-    if (subCategory) {
+    const subCategory = await SubCategoryModel.find({ name: name });
+    if (subCategory.length > 0) {
       return response.status(409).json({
         errorMessage: `Subcategory with this name already exists!`,
         success: false,
@@ -338,10 +338,146 @@ export const updateSubcategoryController = async (request, response) => {
       }
 
       const requestImageHash = getSHA256(image?.buffer);
-      const cloudinaryImageHash = getSHA256(
-        (await axios.get(subcategory?.image, { responseType: "arraybuffer" }))
-          .data
+      const cloudinaryImageHash = subcategory?.image
+        ? getSHA256(
+            (
+              await axios.get(subcategory?.image, {
+                responseType: "arraybuffer",
+              })
+            ).data
+          )
+        : "";
+      console.log(
+        `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
       );
+      if (requestImageHash !== cloudinaryImageHash) {
+        const uploadResponse = await uploadImageToCloudinary(image);
+        console.log("Image Upload Response Cloudinary: \n", uploadResponse);
+        subcategory.image = uploadResponse?.url;
+        imageUpdated = true;
+      }
+    }
+
+    if (!nameUpdated && !categoriesUpdated && !imageUpdated) {
+      return response.status(409).json({
+        errorMessage: "New data identical to saved data",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    await subcategory.save();
+
+    return response.status(200).json({
+      message: "Subcategory updated successfully",
+      data: subcategory,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const updateSubcategoryByNameController = async (request, response) => {
+  try {
+    const { originalName, name, categories } = request.body;
+    if (!originalName) {
+      return response.status(400).json({
+        errorMessage: "Missing required field `originalName`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    const image = request.file;
+    console.log(image);
+    if (!(name || categories || image)) {
+      return response.status(400).json({
+        errorMessage:
+          "Atleast one of the following fields are required: `name`, `categories` or `image`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const subcategory = await SubCategoryModel.findOne({ name: originalName });
+    if (!subcategory) {
+      return response.status(404).json({
+        errorMessage: "Subcategory with given name not found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    let nameUpdated = false;
+    if (name) {
+      if (name !== subcategory?.name) {
+        subcategory.name = name;
+        nameUpdated = true;
+      }
+    }
+
+    let categoriesUpdated = false;
+    if (categories) {
+      const categoriesArray = JSON.parse(categories);
+      if (!Array.isArray(categoriesArray)) {
+        return response.status(400).json({
+          errorMessage: "Categories must be an array",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      if (categoriesArray.length === 0) {
+        return response.status(400).json({
+          errorMessage: "Categories cannot be empty",
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      for (let i = 0; i < categoriesArray.length; i++) {
+        if (!isValidObjectId(categoriesArray[i])) {
+          return response.status(400).json({
+            errorMessage: `Invalid Category ID: ${categoriesArray[i]}; At Position: ${i}`,
+            success: false,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+
+      if (categories !== JSON.stringify(subcategory.category)) {
+        subcategory.category = categoriesArray;
+        categoriesUpdated = true;
+      }
+    }
+
+    let imageUpdated = false;
+    if (image) {
+      if (!IMAGE_MIMETYPE_LIST.includes(image?.mimetype)) {
+        return response.status(400).json({
+          errorMessage: `Invalid file format! Choose a format from this list: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heif', 'image/heic']`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const requestImageHash = getSHA256(image?.buffer);
+      const cloudinaryImageHash = subcategory?.image
+        ? getSHA256(
+            (
+              await axios.get(subcategory?.image, {
+                responseType: "arraybuffer",
+              })
+            ).data
+          )
+        : "";
       console.log(
         `newImageHash: ${requestImageHash}\ncloudinaryImageHash: ${cloudinaryImageHash}`
       );

@@ -7,6 +7,7 @@ import {
   deleteSubcategoryController,
   getAllCategoriesByCategoryController,
   getSubcategoriesController,
+  updateSubcategoryByNameController,
   updateSubcategoryController,
 } from "../controllers/subcategory.controller.js";
 
@@ -33,6 +34,12 @@ subCategoryRouter.put(
   auth,
   tempStorage.single("image"),
   updateSubcategoryController
+);
+subCategoryRouter.put(
+  "/update-subcategory-by-name",
+  auth,
+  tempStorage.single("image"),
+  updateSubcategoryByNameController
 );
 subCategoryRouter.delete(
   "/delete-subcategory/:subcategoryId",
