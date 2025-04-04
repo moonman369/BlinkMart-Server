@@ -58,6 +58,15 @@ export const addProductController = async (request, response) => {
       });
     }
 
+    const product = await ProductModel.find({ name: name });
+    if (product.length > 0) {
+      return response.status(409).json({
+        errorMessage: `Product with this name already exists!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     let imageUrlsArray = [];
     for (let image of images) {
       try {
