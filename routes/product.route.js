@@ -3,6 +3,8 @@ import { auth } from "../middleware/auth.js";
 import tempStorage from "../middleware/multer.js";
 import {
   addProductController,
+  addProductDataLoadController,
+  editProductCategoryDataLoadController,
   getProductsByCategoryController,
   getProductsController,
 } from "../controllers/product.controller.js";
@@ -15,6 +17,17 @@ productRouter.post(
   tempStorage.array("images"),
   addProductController
 );
+productRouter.post(
+  "/add-product-dataload",
+  tempStorage.array("images"),
+  auth,
+  addProductDataLoadController
+);
 productRouter.get("/get-products", getProductsController);
 productRouter.get("/get-products-by-category", getProductsByCategoryController);
+productRouter.put(
+  "/edit-product-category-dataload",
+  auth,
+  editProductCategoryDataLoadController
+);
 export default productRouter;
