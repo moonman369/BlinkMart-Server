@@ -4,6 +4,7 @@ import tempStorage from "../middleware/multer.js";
 import {
   addProductController,
   addProductDataLoadController,
+  editProductCategoryDataLoadController,
   getProductsByCategoryController,
   getProductsController,
 } from "../controllers/product.controller.js";
@@ -24,4 +25,9 @@ productRouter.post(
 );
 productRouter.get("/get-products", getProductsController);
 productRouter.get("/get-products-by-category", getProductsByCategoryController);
+productRouter.put(
+  "/edit-product-category-dataload",
+  auth,
+  editProductCategoryDataLoadController
+);
 export default productRouter;

@@ -244,9 +244,14 @@ export const addProductDataLoadController = async (request, response) => {
       const category = await CategoryModel.findOne({
         name: categoryName,
       });
-      if (category) {
-        categoryIdsArray.push(category._id);
+      if (!category) {
+        return response.status(404).json({
+          errorMessage: `Category with name ${categoryName} not found`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
       }
+      categoryIdsArray.push(category._id);
     }
 
     const subcategoriesArray = JSON.parse(subcategories);
@@ -262,9 +267,14 @@ export const addProductDataLoadController = async (request, response) => {
       const subcategory = await SubCategoryModel.findOne({
         name: subcategoryName,
       });
-      if (subcategory) {
-        subcategoryIdsArray.push(subcategory._id);
+      if (!subcategory) {
+        return response.status(404).json({
+          errorMessage: `Subcategory with name ${subcategoryName} not found`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
       }
+      subcategoryIdsArray.push(subcategory._id);
     }
 
     const moreDetailsObject = more_details ? JSON.parse(more_details) : "{}";
@@ -419,6 +429,73 @@ export const getProductsByCategoryController = async (request, response) => {
       totalCount: totalRecordCount,
       data: dbResponse,
       success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const editProductCategoryDataLoadController = async (
+  request,
+  response
+) => {
+  try {
+    const { name, categories } = request.body;
+
+    if (!name) {
+      return response.status(400).json({
+        errorMessage: "Missing required parameter `name`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return response.status(400).json({
+        errorMessage: "Field `categories` should be an non-empty array",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    let categoryIdsArray = [];
+    for (let categoryName of categories) {
+      const category = await CategoryModel.findOne({
+        name: categoryName,
+      });
+      if (!category) {
+        return response.status(404).json({
+          errorMessage: `Category with name ${categoryName} not found`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      categoryIdsArray.push(category._id);
+    }
+
+    const product = await ProductModel.findOne({ name: name });
+    if (!product) {
+      return response.status(404).json({
+        errorMessage: `Product with this name does not exist!`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    product.category_id = categoryIdsArray;
+    const savedProduct = await product.save();
+    console.log("Saved Product: ", savedProduct);
+
+    return response.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      product: savedProduct,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
