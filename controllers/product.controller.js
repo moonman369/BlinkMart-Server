@@ -5,6 +5,7 @@ import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 import { query } from "express";
 import CategoryModel from "../models/category.model.js";
 import SubCategoryModel from "../models/sub_category.model.js";
+import { isValidObjectId } from "mongoose";
 
 export const addProductController = async (request, response) => {
   try {
@@ -388,11 +389,39 @@ export const getProductsController = async (request, response) => {
 
 export const getProductsByCategoryController = async (request, response) => {
   try {
-    const { categoryId } = request.query;
+    const { categoryId, all } = request.query;
     if (!categoryId) {
       return response.status(400).json({
         errorMessage: "Missing required parameter `categoryId`",
         success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!isValidObjectId(categoryId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid categoryId",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (all) {
+      const dbResponse = await ProductModel.find({
+        category_id: { $in: categoryId },
+      }).sort({ createdAt: -1 });
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: `No products found under categoryId: ${categoryId}`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return response.status(200).json({
+        message: "Products fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
         timestamp: new Date().toISOString(),
       });
     }
@@ -421,6 +450,87 @@ export const getProductsByCategoryController = async (request, response) => {
       });
     }
 
+    return response.status(200).json({
+      message: "Products fetched successfully",
+      pageSize,
+      currentPage: currentPage,
+      count: dbResponse.length,
+      totalCount: totalRecordCount,
+      data: dbResponse,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const getProductsBySubcategoryController = async (request, response) => {
+  try {
+    const { subcategoryId, all } = request.query;
+    if (!subcategoryId) {
+      return response.status(400).json({
+        errorMessage: "Missing required parameter `subcategoryId`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!isValidObjectId(subcategoryId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid subcategoryId",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (all) {
+      const dbResponse = await ProductModel.find({
+        sub_category_id: { $in: subcategoryId },
+      }).sort({ createdAt: -1 });
+      if (!dbResponse) {
+        return response.status(404).json({
+          errorMessage: `No products found under subcategoryId: ${subcategoryId}`,
+          success: false,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return response.status(200).json({
+        message: "Products fetched successfully",
+        count: dbResponse.length,
+        data: dbResponse,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const pageSize = Number(request.query.pageSize) || 20;
+    const currentPage = Number(request.query.currentPage) || 1;
+
+    const skip = pageSize * (currentPage - 1);
+    const [dbResponse, totalRecordCount] = await Promise.all([
+      ProductModel.find({
+        sub_category_id: { $in: subcategoryId },
+      })
+        .skip(skip)
+        .limit(pageSize)
+        .sort({ createdAt: -1 }),
+
+      ProductModel.find({
+        sub_category_id: { $in: subcategoryId },
+      }).countDocuments(),
+    ]);
+    if (dbResponse.length === 0) {
+      return response.status(404).json({
+        errorMessage: `No products found under subcategoryId: ${subcategoryId}`,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
     return response.status(200).json({
       message: "Products fetched successfully",
       pageSize,

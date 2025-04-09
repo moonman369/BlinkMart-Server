@@ -6,6 +6,7 @@ import {
   addProductDataLoadController,
   editProductCategoryDataLoadController,
   getProductsByCategoryController,
+  getProductsBySubcategoryController,
   getProductsController,
 } from "../controllers/product.controller.js";
 
@@ -25,6 +26,11 @@ productRouter.post(
 );
 productRouter.get("/get-products", getProductsController);
 productRouter.get("/get-products-by-category", getProductsByCategoryController);
+productRouter.get(
+  "/get-products-by-subcategory",
+  auth,
+  getProductsBySubcategoryController
+);
 productRouter.put(
   "/edit-product-category-dataload",
   auth,
