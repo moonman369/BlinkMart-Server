@@ -557,7 +557,7 @@ export const editProductCategoryDataLoadController = async (
   response
 ) => {
   try {
-    const { name, categories } = request.body;
+    const { name, categories, subcategories } = request.body;
 
     if (!name) {
       return response.status(400).json({
@@ -567,26 +567,38 @@ export const editProductCategoryDataLoadController = async (
       });
     }
 
-    if (!Array.isArray(categories) || categories.length === 0) {
-      return response.status(400).json({
-        errorMessage: "Field `categories` should be an non-empty array",
-        success: false,
-        timestamp: new Date().toISOString(),
-      });
-    }
     let categoryIdsArray = [];
-    for (let categoryName of categories) {
-      const category = await CategoryModel.findOne({
-        name: categoryName,
-      });
-      if (!category) {
-        return response.status(404).json({
-          errorMessage: `Category with name ${categoryName} not found`,
-          success: false,
-          timestamp: new Date().toISOString(),
+    if (Array.isArray(categories) || categories.length > 0) {
+      for (let categoryName of categories) {
+        const category = await CategoryModel.findOne({
+          name: categoryName,
         });
+        if (!category) {
+          return response.status(404).json({
+            errorMessage: `Category with name ${categoryName} not found`,
+            success: false,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        categoryIdsArray.push(category._id);
       }
-      categoryIdsArray.push(category._id);
+    }
+
+    let subcategoryIdsArray = [];
+    if (Array.isArray(subcategories) || subcategories.length > 0) {
+      for (let subcategoryName of subcategories) {
+        const subcategory = await SubCategoryModel.findOne({
+          name: subcategoryName,
+        });
+        if (!subcategory) {
+          return response.status(404).json({
+            errorMessage: `Subcategory with name ${subcategoryName} not found`,
+            success: false,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        subcategoryIdsArray.push(subcategory._id);
+      }
     }
 
     const product = await ProductModel.findOne({ name: name });
@@ -598,7 +610,12 @@ export const editProductCategoryDataLoadController = async (
       });
     }
 
-    product.category_id = categoryIdsArray;
+    if (categoryIdsArray.length > 0) {
+      product.category_id = categoryIdsArray;
+    }
+    if (subcategoryIdsArray.length > 0) {
+      product.sub_category_id = subcategoryIdsArray;
+    }
     const savedProduct = await product.save();
     console.log("Saved Product: ", savedProduct);
 
