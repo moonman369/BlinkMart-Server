@@ -184,7 +184,7 @@ export const getSubcategoriesController = async (request, response) => {
   }
 };
 
-export const getAllCategoriesByCategoryController = async (
+export const getAllSubcategoriesByCategoryController = async (
   request,
   response
 ) => {
