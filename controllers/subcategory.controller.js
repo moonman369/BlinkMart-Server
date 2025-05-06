@@ -117,10 +117,19 @@ export const addSubcategoryController = async (request, response) => {
 
 export const getSubcategoriesController = async (request, response) => {
   try {
+    const { hasProducts } = request.query;
     if (request.query?.all) {
-      const dbResponse = await SubCategoryModel.find()
+      let dbResponse = await SubCategoryModel.find()
         .sort({ createdAt: -1 })
         .populate("category");
+      if (hasProducts) {
+        dbResponse = dbResponse.filter(async (subcategory) => {
+          (await ProductModel.find({
+            subcategory: subcategory._id,
+          }).countDocuments()) > 0;
+        });
+      }
+
       if (!dbResponse) {
         return response.status(404).json({
           errorMessage: "No subcategories found",
@@ -175,7 +184,7 @@ export const getSubcategoriesController = async (request, response) => {
   }
 };
 
-export const getAllCategoriesByCategoryController = async (
+export const getAllSubcategoriesByCategoryController = async (
   request,
   response
 ) => {
