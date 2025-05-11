@@ -614,7 +614,7 @@ export const refreshTokenController = async (request, response) => {
 
     const verifyToken = jwt.verify(
       refreshToken,
-      process.env["SERVER.TOKEN.REFRESH.SECRET_KEY"]
+      process.env["SERVER_TOKEN_REFRESH_SECRET_KEY"]
     );
     if (!verifyToken) {
       return response.status(401).json({
