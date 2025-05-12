@@ -8,6 +8,7 @@ import {
   getProductsByCategoryController,
   getProductsBySubcategoryController,
   getProductsController,
+  getProductByIdController,
 } from "../controllers/product.controller.js";
 
 const productRouter = Router();
@@ -36,4 +37,6 @@ productRouter.put(
   auth,
   editProductCategoryDataLoadController
 );
+productRouter.get("/get-product", getProductByIdController);
+
 export default productRouter;

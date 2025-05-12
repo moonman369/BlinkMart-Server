@@ -635,3 +635,52 @@ export const editProductCategoryDataLoadController = async (
     });
   }
 };
+
+export const getProductByIdController = async (request, response) => {
+  try {
+    const { productId } = request.query;
+
+    if (!productId) {
+      return response.status(400).json({
+        errorMessage: "Missing required parameter `productId`",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!isValidObjectId(productId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid product ID format",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const product = await ProductModel.findById(productId)
+      .populate("category_id", "name")
+      .populate("sub_category_id", "name");
+
+    if (!product) {
+      return response.status(404).json({
+        errorMessage: "Product not found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return response.status(200).json({
+      message: "Product details fetched successfully",
+      data: product,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
