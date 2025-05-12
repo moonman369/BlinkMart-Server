@@ -316,7 +316,10 @@ export const addProductDataLoadController = async (request, response) => {
 export const getProductsController = async (request, response) => {
   try {
     if (request?.query?.all) {
-      const dbResponse = await ProductModel.find().sort({ createdAt: -1 });
+      const dbResponse = await ProductModel.find()
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
+        .sort({ createdAt: -1 });
       if (!dbResponse) {
         return response.status(404).json({
           errorMessage: "No products found",
@@ -350,14 +353,14 @@ export const getProductsController = async (request, response) => {
 
     const [dbResponse, totalRecordCount] = await Promise.all([
       ProductModel.find(searchQuery)
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
         .skip(skip)
         .limit(pageSize)
         .sort({ createdAt: -1 }),
       ProductModel.countDocuments(searchQuery),
     ]);
 
-    // const dbResponse = await
-    // const totalRecordCount = await
     if (!dbResponse) {
       return response.status(404).json({
         errorMessage: "No products found",
@@ -408,7 +411,10 @@ export const getProductsByCategoryController = async (request, response) => {
     if (all) {
       const dbResponse = await ProductModel.find({
         category_id: { $in: categoryId },
-      }).sort({ createdAt: -1 });
+      })
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
+        .sort({ createdAt: -1 });
       if (!dbResponse) {
         return response.status(404).json({
           errorMessage: `No products found under categoryId: ${categoryId}`,
@@ -433,6 +439,8 @@ export const getProductsByCategoryController = async (request, response) => {
       ProductModel.find({
         category_id: { $in: categoryId },
       })
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
         .skip(skip)
         .limit(pageSize)
         .sort({ createdAt: -1 }),
@@ -491,7 +499,10 @@ export const getProductsBySubcategoryController = async (request, response) => {
     if (all) {
       const dbResponse = await ProductModel.find({
         sub_category_id: { $in: subcategoryId },
-      }).sort({ createdAt: -1 });
+      })
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
+        .sort({ createdAt: -1 });
       if (!dbResponse) {
         return response.status(404).json({
           errorMessage: `No products found under subcategoryId: ${subcategoryId}`,
@@ -516,6 +527,8 @@ export const getProductsBySubcategoryController = async (request, response) => {
       ProductModel.find({
         sub_category_id: { $in: subcategoryId },
       })
+        .populate("category_id", "name")
+        .populate("sub_category_id", "name")
         .skip(skip)
         .limit(pageSize)
         .sort({ createdAt: -1 }),
