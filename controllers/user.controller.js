@@ -8,7 +8,8 @@ import {
 import generateTokens from "../utils/generateTokens.js";
 import { isValidObjectId } from "mongoose";
 import {
-  COOKIE_OPTIONS,
+  ACCESS_TOKEN_COOKIE_OPTIONS,
+  REFRESH_TOKEN_COOKIE_OPTIONS,
   IMAGE_MIMETYPE_LIST,
   MINUTES_TO_MILLIS,
 } from "../utils/constants.js";
@@ -199,8 +200,8 @@ export const loginUserController = async (request, response) => {
       user.role
     );
 
-    response.cookie("accessToken", accessToken, COOKIE_OPTIONS);
-    response.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    response.cookie("accessToken", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+    response.cookie("refreshToken", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     return response.status(200).json({
       message: "Login successful!",
@@ -273,13 +274,8 @@ export const logoutUserController = async (request, response) => {
       });
     }
 
-    const cookiesOption = {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-    };
-    response.clearCookie("accessToken", cookiesOption);
-    response.clearCookie("refreshToken", cookiesOption);
+    response.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
+    response.clearCookie("refreshToken", REFRESH_TOKEN_COOKIE_OPTIONS);
 
     const updateDbResponse = await UserModel.findByIdAndUpdate(userId, {
       refresh_token: "",
@@ -626,7 +622,7 @@ export const refreshTokenController = async (request, response) => {
     console.log(verifyToken);
     const { id, role } = verifyToken;
     const newAccessToken = await generateTokens.generateAccessToken(id, role);
-    response.cookie("accessToken", newAccessToken, COOKIE_OPTIONS);
+    response.cookie("accessToken", newAccessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
     return response.status(200).json({
       message: `New access token has been generated!!`,
       tokens: {
