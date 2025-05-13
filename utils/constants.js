@@ -50,7 +50,7 @@ export const COOKIE_OPTIONS = {
       ? process.env.FRONTEND_COOKIE_DOMAIN
       : "localhost",
   path: "/",
-  httpOnly: process.env.NODE_ENV === ENV_PROD,
+  httpOnly: false,
   secure: process.env.NODE_ENV === ENV_PROD,
   sameSite: process.env.NODE_ENV === ENV_PROD ? "None" : "Lax",
 };
