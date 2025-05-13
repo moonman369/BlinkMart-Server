@@ -45,6 +45,10 @@ const convertTimeToMs = (timeStr) => {
 };
 
 export const COOKIE_OPTIONS = {
+  domain:
+    process.env.NODE_ENV === ENV_PROD
+      ? process.env.FRONTEND_COOKIE_DOMAIN
+      : "localhost",
   path: "/",
   httpOnly: process.env.NODE_ENV === ENV_PROD,
   secure: process.env.NODE_ENV === ENV_PROD,
