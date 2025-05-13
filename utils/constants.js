@@ -48,7 +48,7 @@ export const COOKIE_OPTIONS = {
   path: "/",
   httpOnly: process.env.NODE_ENV === ENV_PROD,
   secure: process.env.NODE_ENV === ENV_PROD,
-  sameSite: "Lax",
+  sameSite: process.env.NODE_ENV === ENV_PROD ? "None" : "Lax",
 };
 
 export const ACCESS_TOKEN_COOKIE_OPTIONS = {
