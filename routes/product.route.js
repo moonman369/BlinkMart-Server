@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { auth } from "../middleware/auth.js";
+import { auth, adminAuth } from "../middleware/auth.js";
 import tempStorage from "../middleware/multer.js";
 import {
   addProductController,
@@ -16,13 +16,15 @@ const productRouter = Router();
 productRouter.post(
   "/add-product",
   auth,
+  adminAuth,
   tempStorage.array("images"),
   addProductController
 );
 productRouter.post(
   "/add-product-dataload",
-  tempStorage.array("images"),
   auth,
+  adminAuth,
+  tempStorage.array("images"),
   addProductDataLoadController
 );
 productRouter.get("/get-products", getProductsController);
@@ -35,6 +37,7 @@ productRouter.get(
 productRouter.put(
   "/edit-product-category-dataload",
   auth,
+  adminAuth,
   editProductCategoryDataLoadController
 );
 productRouter.get("/get-product", getProductByIdController);

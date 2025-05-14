@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { auth } from "../middleware/auth.js";
+import { auth, adminAuth } from "../middleware/auth.js";
 import tempStorage from "../middleware/multer.js";
 import {
   addSubcategoryController,
@@ -16,6 +16,7 @@ const subCategoryRouter = Router();
 subCategoryRouter.post(
   "/add-subcategory",
   auth,
+  adminAuth,
   tempStorage.single("image"),
   addSubcategoryController
 );
@@ -32,18 +33,21 @@ subCategoryRouter.get(
 subCategoryRouter.put(
   "/update-subcategory/:subcategoryId",
   auth,
+  adminAuth,
   tempStorage.single("image"),
   updateSubcategoryController
 );
 subCategoryRouter.put(
   "/update-subcategory-by-name",
   auth,
+  adminAuth,
   tempStorage.single("image"),
   updateSubcategoryByNameController
 );
 subCategoryRouter.delete(
   "/delete-subcategory/:subcategoryId",
   auth,
+  adminAuth,
   deleteSubcategoryController
 );
 
