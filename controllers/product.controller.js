@@ -343,11 +343,19 @@ export const getProductsController = async (request, response) => {
 
     const search = request?.query?.search;
     console.log(search);
+    // const searchQuery = search
+    //   ? {
+    //       $text: {
+    //         $search: search,
+    //       },
+    //     }
+    //   : {};
     const searchQuery = search
       ? {
-          $text: {
-            $search: search,
-          },
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+          ],
         }
       : {};
 
