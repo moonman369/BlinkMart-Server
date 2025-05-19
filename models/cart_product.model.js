@@ -10,12 +10,10 @@ const cartProductSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
-    user_d: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: "user",
-      },
-    ],
+    user_id: {
+      type: mongoose.Schema.ObjectId,
+      ref: "user",
+    },
   },
   {
     timestamps: true,
