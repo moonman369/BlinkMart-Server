@@ -5,7 +5,7 @@ import { isValidObjectId } from "mongoose";
 // Get user's shopping cart
 export const getCartController = async (request, response) => {
   try {
-    const userId = request.userId;
+    const { userId } = request.body;
 
     if (!userId) {
       return response.status(400).json({
@@ -27,7 +27,7 @@ export const getCartController = async (request, response) => {
       path: "shopping_cart",
       populate: {
         path: "product",
-        select: "name price image",
+        select: "name price description images category",
       },
     });
 
@@ -59,8 +59,21 @@ export const getCartController = async (request, response) => {
 // Add product to cart
 export const addToCartController = async (request, response) => {
   try {
-    const userId = request.userId;
-    const { productId, quantity } = request.body;
+    const { userId, productId, quantity } = request.body;
+    if (!userId) {
+      return response.status(400).json({
+        errorMessage: "Required field 'userId' was not provided",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!isValidObjectId(userId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid user ID or product ID format",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     if (!productId) {
       return response.status(400).json({
@@ -69,10 +82,9 @@ export const addToCartController = async (request, response) => {
         timestamp: new Date().toISOString(),
       });
     }
-
-    if (!isValidObjectId(userId) || !isValidObjectId(productId)) {
+    if (!isValidObjectId(productId)) {
       return response.status(400).json({
-        errorMessage: "Invalid user ID or product ID format",
+        errorMessage: "Invalid product ID format",
         success: false,
         timestamp: new Date().toISOString(),
       });
@@ -103,16 +115,16 @@ export const addToCartController = async (request, response) => {
         product: productId,
         quantity: parsedQuantity,
       });
+      const updateResult = await UserModel.findByIdAndUpdate(
+        userId,
+        {
+          $addToSet: { shopping_cart: cartProduct._id },
+        },
+        { new: true }
+      );
     }
 
     // Add to user's shopping_cart array if not already present
-    const updateResult = await UserModel.findByIdAndUpdate(
-      userId,
-      {
-        $addToSet: { shopping_cart: cartProduct._id },
-      },
-      { new: true }
-    );
 
     if (!updateResult) {
       return response.status(500).json({
