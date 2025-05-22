@@ -1,11 +1,11 @@
 import UserModel from "../models/user.model.js";
-import CartProductModel from "../models/cartProduct.model.js";
+import CartProductModel from "../models/cart_product.model.js";
 import { isValidObjectId } from "mongoose";
 
 // Get user's shopping cart
 export const getCartController = async (request, response) => {
   try {
-    const { userId } = request.body;
+    const { userId } = request.query;
 
     if (!userId) {
       return response.status(400).json({
@@ -25,10 +25,18 @@ export const getCartController = async (request, response) => {
 
     const user = await UserModel.findById(userId).populate({
       path: "shopping_cart",
-      populate: {
-        path: "product",
-        select: "name price description images category",
-      },
+      populate: [
+        {
+          path: "user_id",
+          model: "user",
+          select: "username email", // Only select fields you need
+        },
+        {
+          path: "product",
+          model: "product",
+          select: "name price description images category status", // Only select fields you need
+        },
+      ],
     });
 
     if (!user) {
@@ -102,7 +110,7 @@ export const addToCartController = async (request, response) => {
 
     // Create or update cart product
     let cartProduct = await CartProductModel.findOne({
-      user: userId,
+      user_id: userId,
       product: productId,
     });
 
@@ -111,28 +119,19 @@ export const addToCartController = async (request, response) => {
       await cartProduct.save();
     } else {
       cartProduct = await CartProductModel.create({
-        user: userId,
+        user_id: userId,
         product: productId,
         quantity: parsedQuantity,
       });
-      const updateResult = await UserModel.findByIdAndUpdate(
-        userId,
-        {
-          $addToSet: { shopping_cart: cartProduct._id },
-        },
-        { new: true }
-      );
     }
 
-    // Add to user's shopping_cart array if not already present
-
-    if (!updateResult) {
-      return response.status(500).json({
-        errorMessage: "Failed to update user's cart",
-        success: false,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { shopping_cart: cartProduct._id },
+      },
+      { new: true }
+    );
 
     return response.status(200).json({
       message: "Product added to cart successfully",
@@ -154,8 +153,22 @@ export const addToCartController = async (request, response) => {
 // Remove product from cart
 export const removeFromCartController = async (request, response) => {
   try {
-    const userId = request.userId;
-    const { cartProductId } = request.body;
+    const { userId, cartProductId, all } = request.body;
+
+    if (!userId) {
+      return response.status(400).json({
+        errorMessage: "Required field 'userId' was not provided",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    if (!isValidObjectId(userId)) {
+      return response.status(400).json({
+        errorMessage: "Invalid user ID format",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     if (!cartProductId) {
       return response.status(400).json({
@@ -165,7 +178,7 @@ export const removeFromCartController = async (request, response) => {
       });
     }
 
-    if (!isValidObjectId(userId) || !isValidObjectId(cartProductId)) {
+    if (!isValidObjectId(cartProductId)) {
       return response.status(400).json({
         errorMessage: "Invalid user ID or cart product ID format",
         success: false,
@@ -176,7 +189,7 @@ export const removeFromCartController = async (request, response) => {
     // Verify cart product exists and belongs to user
     const cartProduct = await CartProductModel.findOne({
       _id: cartProductId,
-      user: userId,
+      user_id: userId,
     });
 
     if (!cartProduct) {
@@ -187,29 +200,36 @@ export const removeFromCartController = async (request, response) => {
       });
     }
 
-    // Remove from user's shopping_cart array
-    const updateResult = await UserModel.findByIdAndUpdate(
-      userId,
-      {
-        $pull: { shopping_cart: cartProductId },
-      },
-      { new: true }
-    );
-
-    if (!updateResult) {
-      return response.status(500).json({
-        errorMessage: "Failed to update user's cart",
+    if (cartProduct.quantity < 1) {
+      return response.status(400).json({
+        errorMessage: "Cart product quantity is less than 1",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
 
-    // Delete the cart product document
-    await CartProductModel.findByIdAndDelete(cartProductId);
+    if (all || cartProduct.quantity == 1) {
+      // Remove from user's shopping_cart array
+      await CartProductModel.findByIdAndDelete(cartProductId);
+      // Remove cart product from user's shopping_cart array
+      await UserModel.findByIdAndUpdate(
+        userId,
+        {
+          $pull: { shopping_cart: cartProductId },
+        },
+        { new: true }
+      );
+    } else {
+      // Decrease quantity or remove from cart
+      if (cartProduct.quantity > 1) {
+        cartProduct.quantity -= 1;
+        await cartProduct.save();
+      }
+    }
 
     return response.status(200).json({
       message: "Product removed from cart successfully",
-      data: { cartProductId },
+      data: { cartProduct },
       success: true,
       timestamp: new Date().toISOString(),
     });
@@ -227,7 +247,7 @@ export const removeFromCartController = async (request, response) => {
 // Clear entire cart
 export const clearCartController = async (request, response) => {
   try {
-    const userId = request.userId;
+    const { userId } = request.query;
 
     if (!userId) {
       return response.status(400).json({
