@@ -5,7 +5,7 @@ import { isValidObjectId } from "mongoose";
 // Get user's shopping cart
 export const getCartController = async (request, response) => {
   try {
-    const { userId } = request.query;
+    const { userId } = request;
 
     if (!userId) {
       return response.status(400).json({
@@ -67,7 +67,7 @@ export const getCartController = async (request, response) => {
 // Add product to cart
 export const addToCartController = async (request, response) => {
   try {
-    const { userId, productId, quantity } = request.body;
+    const { userId } = request;
     if (!userId) {
       return response.status(400).json({
         errorMessage: "Required field 'userId' was not provided",
@@ -83,6 +83,7 @@ export const addToCartController = async (request, response) => {
       });
     }
 
+    const { productId, quantity } = request.body;
     if (!productId) {
       return response.status(400).json({
         errorMessage: "Required field 'productId' was not provided",
@@ -153,7 +154,7 @@ export const addToCartController = async (request, response) => {
 // Remove product from cart
 export const removeFromCartController = async (request, response) => {
   try {
-    const { userId, cartProductId, all } = request.body;
+    const { userId } = request;
 
     if (!userId) {
       return response.status(400).json({
@@ -169,6 +170,7 @@ export const removeFromCartController = async (request, response) => {
         timestamp: new Date().toISOString(),
       });
     }
+    const { cartProductId, all } = request.body;
 
     if (!cartProductId) {
       return response.status(400).json({
@@ -247,7 +249,7 @@ export const removeFromCartController = async (request, response) => {
 // Clear entire cart
 export const clearCartController = async (request, response) => {
   try {
-    const { userId } = request.query;
+    const { userId } = request;
 
     if (!userId) {
       return response.status(400).json({
