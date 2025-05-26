@@ -34,7 +34,8 @@ export const getCartController = async (request, response) => {
         {
           path: "product",
           model: "product",
-          select: "name price description images category status", // Only select fields you need
+          select:
+            "name price description image category_id sub_category_id discount stock unit", // Only select fields you need
         },
       ],
     });
@@ -134,9 +135,26 @@ export const addToCartController = async (request, response) => {
       { new: true }
     );
 
+    const user = await UserModel.findById(userId).populate({
+      path: "shopping_cart",
+      populate: [
+        {
+          path: "user_id",
+          model: "user",
+          select: "username email", // Only select fields you need
+        },
+        {
+          path: "product",
+          model: "product",
+          select:
+            "name price description image category_id sub_category_id discount stock unit", // Only select fields you need
+        },
+      ],
+    });
+
     return response.status(200).json({
       message: "Product added to cart successfully",
-      data: cartProduct,
+      data: user.shopping_cart,
       success: true,
       timestamp: new Date().toISOString(),
     });
