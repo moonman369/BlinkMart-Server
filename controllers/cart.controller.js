@@ -101,7 +101,7 @@ export const addToCartController = async (request, response) => {
     }
 
     // Validate quantity
-    const parsedQuantity = parseInt(quantity) || 1;
+    const parsedQuantity = parseInt(quantity ?? 1);
     if (parsedQuantity < 1) {
       return response.status(400).json({
         errorMessage: "Quantity must be greater than 0",
@@ -188,7 +188,7 @@ export const removeFromCartController = async (request, response) => {
         timestamp: new Date().toISOString(),
       });
     }
-    const { cartProductId, all } = request.body;
+    const { cartProductId, quantity, all } = request.body;
 
     if (!cartProductId) {
       return response.status(400).json({
@@ -220,6 +220,15 @@ export const removeFromCartController = async (request, response) => {
       });
     }
 
+    const parsedQuantity = parseInt(quantity ?? 1);
+    if (parsedQuantity < 1) {
+      return response.status(400).json({
+        errorMessage: "Quantity must be greater than 0",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     if (cartProduct.quantity < 1) {
       return response.status(400).json({
         errorMessage: "Cart product quantity is less than 1",
@@ -228,7 +237,17 @@ export const removeFromCartController = async (request, response) => {
       });
     }
 
-    if (all || cartProduct.quantity == 1) {
+    if (cartProduct.quantity < parsedQuantity) {
+      return response.status(400).json({
+        errorMessage: "Requested quantity exceeds available quantity in cart",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    let successMessage = "";
+    if (all || cartProduct.quantity === parsedQuantity) {
+      // If 'all' is true or quantity matches, remove the product completely
       // Remove from user's shopping_cart array
       await CartProductModel.findByIdAndDelete(cartProductId);
       // Remove cart product from user's shopping_cart array
@@ -239,17 +258,36 @@ export const removeFromCartController = async (request, response) => {
         },
         { new: true }
       );
+      successMessage = "Product removed from cart successfully";
     } else {
       // Decrease quantity or remove from cart
-      if (cartProduct.quantity > 1) {
-        cartProduct.quantity -= 1;
+      if (cartProduct.quantity > parsedQuantity) {
+        cartProduct.quantity -= parsedQuantity ?? 1; // Default to 1 if quantity is not provided
         await cartProduct.save();
       }
+      successMessage = "Product quantity decreased in cart successfully";
     }
 
+    const user = await UserModel.findById(userId).populate({
+      path: "shopping_cart",
+      populate: [
+        {
+          path: "user_id",
+          model: "user",
+          select: "username email", // Only select fields you need
+        },
+        {
+          path: "product",
+          model: "product",
+          select:
+            "name price description image category_id sub_category_id discount stock unit", // Only select fields you need
+        },
+      ],
+    });
+
     return response.status(200).json({
-      message: "Product removed from cart successfully",
-      data: { cartProduct },
+      message: successMessage,
+      data: user.shopping_cart,
       success: true,
       timestamp: new Date().toISOString(),
     });
