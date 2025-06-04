@@ -120,7 +120,7 @@ export const addAddressController = async (request, response) => {
       city,
       state,
       country,
-      postalCode,
+      pincode,
       mobile,
       isDefault,
       addressType,
@@ -149,7 +149,7 @@ export const addAddressController = async (request, response) => {
       !city ||
       !state ||
       !country ||
-      !postalCode ||
+      !pincode ||
       !mobile
     ) {
       return response.status(400).json({
@@ -176,7 +176,7 @@ export const addAddressController = async (request, response) => {
       city,
       state,
       country,
-      postalCode,
+      pincode,
       mobile,
       is_default: isDefault || false,
       address_type: addressType || "Home",
@@ -223,7 +223,17 @@ export const updateAddressController = async (request, response) => {
   try {
     const { userId } = request;
     const { addressId } = request.params;
-    const updateData = request.body;
+    const {
+      addressName,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      country,
+      pincode,
+      mobile,
+      addressType,
+    } = request.body;
 
     if (!userId || !addressId) {
       return response.status(400).json({
@@ -256,18 +266,20 @@ export const updateAddressController = async (request, response) => {
       });
     }
 
-    // If setting as default, unset other defaults
-    if (updateData.isDefault) {
-      await AddressModel.updateMany(
-        { user_id: userId, isDefault: true, _id: { $ne: addressId } },
-        { isDefault: false }
-      );
-    }
-
     // Update the address
     const updatedAddress = await AddressModel.findByIdAndUpdate(
       addressId,
-      updateData,
+      {
+        address_name: addressName || existingAddress.address_name,
+        address_line_1: addressLine1 || existingAddress.address_line_1,
+        address_line_2: addressLine2 || existingAddress.address_line_2,
+        city: city || existingAddress.city,
+        state: state || existingAddress.state,
+        country: country || existingAddress.country,
+        pincode: pincode || existingAddress.pincode,
+        mobile: mobile || existingAddress.mobile,
+        address_type: addressType || existingAddress.address_type,
+      },
       { new: true }
     );
 
@@ -322,6 +334,16 @@ export const deleteAddressController = async (request, response) => {
     if (!addressExists) {
       return response.status(404).json({
         errorMessage: "Address not found or doesn't belong to user",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // If address is default, return conflict error
+    if (addressExists.is_default) {
+      return response.status(409).json({
+        errorMessage:
+          "Cannot delete default address. Set another as default first.",
         success: false,
         timestamp: new Date().toISOString(),
       });
@@ -397,14 +419,14 @@ export const setDefaultAddressController = async (request, response) => {
 
     // Unset default flag on all addresses
     await AddressModel.updateMany(
-      { user_id: userId, isDefault: true },
-      { isDefault: false }
+      { user_id: userId, is_default: true },
+      { is_default: false }
     );
 
     // Set the selected address as default
     const updatedAddress = await AddressModel.findByIdAndUpdate(
       addressId,
-      { isDefault: true },
+      { is_default: true },
       { new: true }
     );
 
