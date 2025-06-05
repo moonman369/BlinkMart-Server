@@ -142,18 +142,25 @@ export const addAddressController = async (request, response) => {
       });
     }
 
-    // Validate required fields
-    if (
-      !addressName ||
-      !addressLine1 ||
-      !city ||
-      !state ||
-      !country ||
-      !pincode ||
-      !mobile
-    ) {
+    // Check and collect all missing required fields
+    const requiredFields = {
+      addressName,
+      addressLine1,
+      city,
+      state,
+      country,
+      pincode,
+      mobile,
+    };
+
+    const missingFields = Object.keys(requiredFields).filter(
+      (field) => !requiredFields[field]
+    );
+
+    if (missingFields.length > 0) {
       return response.status(400).json({
         errorMessage: "Missing required address fields",
+        missingFields,
         success: false,
         timestamp: new Date().toISOString(),
       });
