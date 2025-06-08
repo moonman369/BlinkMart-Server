@@ -6,18 +6,27 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: "user",
     },
-    orderId: {
+    order_id: {
       type: String,
       required: [true, "Required field `order_id` cannot be blank!"],
       unique: true,
     },
-    product_id: {
-      type: mongoose.Schema.ObjectId,
-      ref: "product",
-    },
-    product_details: {
-      name: String,
-      image: Array,
+    products: [
+      {
+        product_id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "product",
+        },
+        quantity: {
+          type: Number,
+          default: 1,
+        },
+      },
+    ],
+    payment_mode: {
+      type: String,
+      enum: ["COD", "Card", "UPI", "Net Banking"],
+      default: "COD",
     },
     payment_id: {
       type: String,
