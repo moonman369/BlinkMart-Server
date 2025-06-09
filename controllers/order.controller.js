@@ -48,7 +48,7 @@ export const getOrderDetailsByUserController = async (request, response) => {
   }
 };
 
-export const cashOnDeliveryOrderController = async (request, response) => {
+export const createCashOnDeliveryOrderController = async (request, response) => {
   try {
     const { userId } = request;
     const {
@@ -388,14 +388,16 @@ export const razorpayWebhookController = async (request, response) => {
   try {
     // Extract event data from request body
     const webhookBody = request.body;
-    const webhookSignature = request.headers['x-razorpay-signature'];
-    
+    const webhookSignature = request.headers["x-razorpay-signature"];
+
     // Verify webhook signature
     if (!webhookSignature) {
       console.error("Webhook signature missing");
       // Return 200 to acknowledge receipt even for invalid requests
       // This prevents Razorpay from retrying the webhook
-      return response.status(200).send("Webhook received but signature missing");
+      return response
+        .status(200)
+        .send("Webhook received but signature missing");
     }
 
     // Verify webhook signature using the webhook secret (different from key_secret)
@@ -416,23 +418,23 @@ export const razorpayWebhookController = async (request, response) => {
     console.log(`Processing webhook event: ${eventType}`);
 
     switch (eventType) {
-      case 'payment.authorized':
+      case "payment.authorized":
         await handlePaymentAuthorized(webhookBody.payload.payment.entity);
         break;
-      
-      case 'payment.captured':
+
+      case "payment.captured":
         await handlePaymentCaptured(webhookBody.payload.payment.entity);
         break;
-      
-      case 'payment.failed':
+
+      case "payment.failed":
         await handlePaymentFailed(webhookBody.payload.payment.entity);
         break;
-      
-      case 'refund.created':
+
+      case "refund.created":
         await handleRefundCreated(webhookBody.payload.refund.entity);
         break;
 
-      case 'order.paid':
+      case "order.paid":
         await handleOrderPaid(webhookBody.payload.order.entity);
         break;
 
@@ -466,20 +468,20 @@ export const razorpayWebhookController = async (request, response) => {
 const handlePaymentAuthorized = async (payment) => {
   try {
     const { order_id, id: payment_id } = payment;
-    
+
     console.log(`Payment authorized: ${payment_id} for order ${order_id}`);
-    
+
     // Find the corresponding order in our database
     const order = await OrderModel.findOne({ razorpay_order_id: order_id });
-    
+
     if (order) {
       // Update the order status to indicate payment is authorized but not yet captured
       order.payment_status = "Authorized";
       order.payment_id = payment_id;
       await order.save();
     }
-    
-    await logWebhookEvent('payment.authorized', payment);
+
+    await logWebhookEvent("payment.authorized", payment);
   } catch (error) {
     console.error("Error handling payment.authorized:", error);
   }
@@ -492,7 +494,7 @@ const handlePaymentAuthorized = async (payment) => {
 const handlePaymentCaptured = async (payment) => {
   try {
     const { order_id, id: payment_id, notes } = payment;
-    
+
     console.log(`Payment captured: ${payment_id} for order ${order_id}`);
 
     // Find the corresponding order in our database
@@ -502,7 +504,7 @@ const handlePaymentCaptured = async (payment) => {
       // Update order status to completed
       order.payment_status = "Completed";
       order.payment_id = payment_id;
-      
+
       // Update product stock if not already updated
       if (!order.stock_updated) {
         for (const product of order.products) {
@@ -512,10 +514,10 @@ const handlePaymentCaptured = async (payment) => {
             { new: true }
           );
         }
-        
+
         // Mark stock as updated to prevent duplicate stock reductions
         order.stock_updated = true;
-        
+
         // Add order to user's history if not already added
         if (!order.added_to_history) {
           await UserModel.findByIdAndUpdate(
@@ -530,17 +532,17 @@ const handlePaymentCaptured = async (payment) => {
             },
             { new: true }
           );
-          
+
           order.added_to_history = true;
         }
       }
-      
+
       await order.save();
     } else {
       console.error(`Order not found for Razorpay order ID: ${order_id}`);
     }
-    
-    await logWebhookEvent('payment.captured', payment);
+
+    await logWebhookEvent("payment.captured", payment);
   } catch (error) {
     console.error("Error handling payment.captured:", error);
   }
@@ -553,8 +555,10 @@ const handlePaymentCaptured = async (payment) => {
 const handlePaymentFailed = async (payment) => {
   try {
     const { order_id, id: payment_id, error_code, error_description } = payment;
-    
-    console.log(`Payment failed: ${payment_id} for order ${order_id}. Error: ${error_code} - ${error_description}`);
+
+    console.log(
+      `Payment failed: ${payment_id} for order ${order_id}. Error: ${error_code} - ${error_description}`
+    );
 
     // Find the corresponding order in our database
     const order = await OrderModel.findOne({ razorpay_order_id: order_id });
@@ -565,8 +569,8 @@ const handlePaymentFailed = async (payment) => {
       order.payment_error = `${error_code}: ${error_description}`;
       await order.save();
     }
-    
-    await logWebhookEvent('payment.failed', payment);
+
+    await logWebhookEvent("payment.failed", payment);
   } catch (error) {
     console.error("Error handling payment.failed:", error);
   }
@@ -579,8 +583,12 @@ const handlePaymentFailed = async (payment) => {
 const handleOrderPaid = async (orderData) => {
   try {
     const { id: razorpay_order_id, receipt, amount } = orderData;
-    
-    console.log(`Order paid: ${razorpay_order_id}, receipt: ${receipt}, amount: ${amount/100}`);
+
+    console.log(
+      `Order paid: ${razorpay_order_id}, receipt: ${receipt}, amount: ${
+        amount / 100
+      }`
+    );
 
     // Find the corresponding order in our database
     const order = await OrderModel.findOne({ razorpay_order_id });
@@ -593,8 +601,8 @@ const handleOrderPaid = async (orderData) => {
         await order.save();
       }
     }
-    
-    await logWebhookEvent('order.paid', orderData);
+
+    await logWebhookEvent("order.paid", orderData);
   } catch (error) {
     console.error("Error handling order.paid:", error);
   }
@@ -607,8 +615,12 @@ const handleOrderPaid = async (orderData) => {
 const handleRefundCreated = async (refund) => {
   try {
     const { payment_id, id: refund_id, amount, notes } = refund;
-    
-    console.log(`Refund created: ${refund_id} for payment ${payment_id}, amount: ${amount/100}`);
+
+    console.log(
+      `Refund created: ${refund_id} for payment ${payment_id}, amount: ${
+        amount / 100
+      }`
+    );
 
     // Find order by payment ID
     const order = await OrderModel.findOne({ payment_id });
@@ -616,27 +628,31 @@ const handleRefundCreated = async (refund) => {
     if (order) {
       // Add refund information to order
       if (!order.refunds) order.refunds = [];
-      
+
       order.refunds.push({
         refund_id,
-        amount: amount/100,
-        reason: notes?.reason || '',
+        amount: amount / 100,
+        reason: notes?.reason || "",
         created_at: new Date(),
       });
-      
+
       // Update order status based on refund amount
-      const totalRefundAmount = order.refunds.reduce((sum, r) => sum + r.amount, 0);
-      
-      if (Math.abs(totalRefundAmount - order.total_amount) < 0.01) {  // Consider floating point issues
+      const totalRefundAmount = order.refunds.reduce(
+        (sum, r) => sum + r.amount,
+        0
+      );
+
+      if (Math.abs(totalRefundAmount - order.total_amount) < 0.01) {
+        // Consider floating point issues
         order.payment_status = "Refunded";
       } else {
         order.payment_status = "PartiallyRefunded";
       }
-      
+
       await order.save();
     }
-    
-    await logWebhookEvent('refund.created', refund);
+
+    await logWebhookEvent("refund.created", refund);
   } catch (error) {
     console.error("Error handling refund.created:", error);
   }
@@ -651,9 +667,11 @@ const logWebhookEvent = async (eventType, data) => {
   try {
     // In production, you would store this in a database
     // For now, we'll just log it to console
-    console.log(`[WebhookLog] Event: ${eventType}, Time: ${new Date().toISOString()}`);
+    console.log(
+      `[WebhookLog] Event: ${eventType}, Time: ${new Date().toISOString()}`
+    );
     console.log(`[WebhookLog] Data: ${JSON.stringify(data)}`);
-    
+
     // You could implement a more sophisticated logging system:
     /*
     await WebhookLogModel.create({
