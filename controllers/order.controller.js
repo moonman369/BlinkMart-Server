@@ -48,7 +48,10 @@ export const getOrderDetailsByUserController = async (request, response) => {
   }
 };
 
-export const createCashOnDeliveryOrderController = async (request, response) => {
+export const createCashOnDeliveryOrderController = async (
+  request,
+  response
+) => {
   try {
     const { userId } = request;
     const {
