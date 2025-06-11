@@ -5,6 +5,7 @@ import AddressModel from "../models/address.model.js";
 import { isValidObjectId } from "mongoose";
 import Razorpay from "razorpay";
 import { razorpayInstance } from "../config/loadRazorPay.js";
+import crypto from "crypto";
 
 export const getOrderDetailsByUserController = async (request, response) => {
   try {
@@ -408,9 +409,8 @@ export const razorpayWebhookController = async (request, response) => {
     }
 
     // Verify webhook signature using the webhook secret (different from key_secret)
-    const crypto = require("crypto");
     const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+      .createHmac("sha256", process.env.APP_RAZORPAY_KEY_SECRET)
       .update(JSON.stringify(webhookBody))
       .digest("hex");
 
@@ -699,20 +699,8 @@ const logWebhookEvent = async (eventType, data) => {
 export const verifyRazorpayPaymentController = async (request, response) => {
   try {
     const { userId } = request;
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      orderId,
-    } = request.body;
-
-    if (!userId) {
-      return response.status(401).json({
-        errorMessage: "Unauthorized: User ID is required",
-        success: false,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      request.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return response.status(400).json({
@@ -725,87 +713,66 @@ export const verifyRazorpayPaymentController = async (request, response) => {
     // Find the pending order
     const order = await OrderModel.findOne({
       razorpay_order_id: razorpay_order_id,
-      user_id: userId,
     });
 
     if (!order) {
       return response.status(404).json({
-        errorMessage: "Order not found",
+        errorMessage: "Order not found with the provided razorpay_order_id",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
 
     // Verify payment signature
-    const crypto = require("crypto");
     const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", process.env.APP_RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
     if (generatedSignature !== razorpay_signature) {
       // Payment verification failed - mark order as failed
       order.payment_status = "Failed";
+      order.payment_error = "Payment signature verification failed";
       await order.save();
 
       return response.status(400).json({
-        errorMessage: "Payment verification failed",
+        errorMessage: "Payment verification failed: Invalid signature",
         success: false,
         timestamp: new Date().toISOString(),
       });
     }
 
-    // Payment verified - update order status if not already updated by webhook
-    if (order.payment_status !== "Completed") {
-      order.payment_status = "Completed";
-      order.razorpay_payment_id = razorpay_payment_id;
+    // Payment verified - update order details
+    order.payment_status = "Completed";
+    order.razorpay_payment_id = razorpay_payment_id;
 
-      // Update product stock if not already updated
-      if (!order.stock_updated) {
-        for (const product of order.products) {
-          await ProductModel.findByIdAndUpdate(
-            product.product_id,
-            { $inc: { stock: -1 * product.quantity } },
-            { new: true }
-          );
-        }
-        order.stock_updated = true;
+    // Update product stock if not already updated
+    if (!order.stock_updated) {
+      for (const product of order.products) {
+        await ProductModel.findByIdAndUpdate(product.product_id, {
+          $inc: { stock: -1 * product.quantity },
+        });
       }
-
-      // Add order to user's history if not already added
-      if (!order.added_to_history) {
-        await UserModel.findByIdAndUpdate(
-          userId,
-          {
-            $push: {
-              order_history: {
-                $each: [order._id],
-                $position: 0,
-              },
-            },
-          },
-          { new: true }
-        );
-        order.added_to_history = true;
-      }
-
-      await order.save();
+      order.stock_updated = true;
     }
+
+    // Add order to user's history if not already added
+    if (!order.added_to_history) {
+      await UserModel.findByIdAndUpdate(order.user_id, {
+        $addToSet: { order_history: order._id },
+      });
+      order.added_to_history = true;
+    }
+
+    await order.save();
 
     // Populate order details for response
     const populatedOrder = await OrderModel.findById(order._id)
-      .populate({
-        path: "products.product_id",
-        select: "name price image",
-      })
-      .populate({
-        path: "delivery_address",
-        select:
-          "addressName addressLine1 addressLine2 city state pincode mobile",
-      });
+      .populate("products.product_id", "name price image")
+      .populate("delivery_address");
 
     return response.status(200).json({
-      message: "Payment verified and order confirmed",
+      message: "Payment verified successfully",
       data: populatedOrder,
       success: true,
       timestamp: new Date().toISOString(),
@@ -813,8 +780,8 @@ export const verifyRazorpayPaymentController = async (request, response) => {
   } catch (error) {
     console.error("Verify Payment Error:", error);
     return response.status(500).json({
-      errorMessage: error.message,
-      errorDetails: error,
+      errorMessage: "Failed to verify payment",
+      error: error.message,
       success: false,
       timestamp: new Date().toISOString(),
     });
