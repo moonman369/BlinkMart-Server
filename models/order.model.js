@@ -28,7 +28,11 @@ const orderSchema = new mongoose.Schema(
       enum: ["COD", "Card", "UPI", "Net Banking"],
       default: "COD",
     },
-    payment_id: {
+    razorpay_order_id: {
+      type: String,
+      default: "",
+    },
+    razorpay_payment_id: {
       type: String,
       default: "",
     },
@@ -47,6 +51,11 @@ const orderSchema = new mongoose.Schema(
     invoice_receipt: {
       type: String,
       default: "",
+    },
+    payment_status: {
+      type: String,
+      enum: ["Pending", "Completed", "Failed"],
+      default: "Pending",
     },
   },
   {

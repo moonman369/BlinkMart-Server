@@ -4,6 +4,8 @@ import {
   createCashOnDeliveryOrderController,
   createOnlinePaymentOrderController,
   getOrderDetailsByUserController,
+  razorpayWebhookController,
+  verifyRazorpayPaymentController,
 } from "../controllers/order.controller.js";
 
 const orderRouter = express.Router();
@@ -19,5 +21,7 @@ orderRouter.post(
   auth,
   createOnlinePaymentOrderController
 );
+orderRouter.post("/razorpay-webhook", razorpayWebhookController);
+orderRouter.post("/verify-payment", auth, verifyRazorpayPaymentController);
 
 export default orderRouter;
