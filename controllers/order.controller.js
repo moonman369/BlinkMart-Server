@@ -787,3 +787,127 @@ export const verifyRazorpayPaymentController = async (request, response) => {
     });
   }
 };
+
+/**
+ * Controller to handle when payment fails
+ */
+export const handlePaymentFailedController = async (request, response) => {
+  try {
+    const { userId } = request;
+    const { razorpay_order_id, error_code, error_description } = request.body;
+
+    if (!userId) {
+      return response.status(401).json({
+        errorMessage: "Unauthorized: User ID is required",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!razorpay_order_id) {
+      return response.status(400).json({
+        errorMessage: "Missing razorpay_order_id",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Find the order
+    const order = await OrderModel.findOne({
+      razorpay_order_id: razorpay_order_id,
+    });
+
+    if (!order) {
+      return response.status(404).json({
+        errorMessage: "Order not found with the provided razorpay_order_id",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Update order status
+    order.payment_status = "Failed";
+    order.payment_error = error_description || `Payment failed with code: ${error_code}`;
+    await order.save();
+
+    return response.status(200).json({
+      message: "Order status updated to failed",
+      data: {
+        orderId: order._id,
+        status: order.payment_status,
+      },
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Handle Payment Failed Error:", error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Controller to handle when payment is cancelled by user
+ */
+export const handlePaymentCancelledController = async (request, response) => {
+  try {
+    const { userId } = request;
+    const { razorpay_order_id, cancel_reason } = request.body;
+
+    if (!userId) {
+      return response.status(401).json({
+        errorMessage: "Unauthorized: User ID is required",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!razorpay_order_id) {
+      return response.status(400).json({
+        errorMessage: "Missing razorpay_order_id",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Find the order
+    const order = await OrderModel.findOne({
+      razorpay_order_id: razorpay_order_id,
+    });
+
+    if (!order) {
+      return response.status(404).json({
+        errorMessage: "Order not found with the provided razorpay_order_id",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Update order status
+    order.payment_status = "Cancelled";
+    order.payment_error = cancel_reason || "Payment cancelled by user";
+    await order.save();
+
+    return response.status(200).json({
+      message: "Order status updated to cancelled",
+      data: {
+        orderId: order._id,
+        status: order.payment_status,
+      },
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Handle Payment Cancelled Error:", error);
+    return response.status(500).json({
+      errorMessage: error.message,
+      errorDetails: error,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
