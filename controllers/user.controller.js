@@ -17,6 +17,63 @@ import { generateOtp } from "../utils/generateOtp.js";
 import jwt from "jsonwebtoken";
 import { uploadImageToCloudinary } from "../utils/uploadImage.js";
 
+/**
+ * Controller to send email verification email to the registered user
+ */
+export const sendEmailVerificationController = async (request, response) => {
+  try {
+    const { userId } = request;
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return response.status(404).json({
+        errorMessage: "User not found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (!user.email) {
+      return response.status(400).json({
+        errorMessage: "No email associated with this user",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (user.email_is_verified) {
+      return response.status(409).json({
+        errorMessage: "Email is already verified",
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const redirectUrl = `${process.env["FRONTEND_ORIGIN"]}/verify-email?code=${user._id}`;
+    const emailResponse = await sendEmail({
+      to: user.email,
+      subject: "Verify your BlinkMart email",
+      htmlBody: getVerifyEmailTemplate({
+        username: user.username,
+        redirectUrl,
+      }),
+    });
+
+    return response.status(200).json({
+      message: "Verification email sent successfully",
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Send Email Verification Error:", error);
+    return response.status(500).json({
+      errorMessage: "Failed to send verification email",
+      errorDetails: error.message,
+      success: false,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
 // Register User Controller
 export const registerUserController = async (request, response) => {
   try {
@@ -70,7 +127,7 @@ export const registerUserController = async (request, response) => {
       subject: "Verify email from BlinkMart",
       htmlBody: getVerifyEmailTemplate({
         username,
-        redirectUrl: `${process.env["FRONTEND.ORIGIN"]}/verify-email?code=${dbResponse._id}`,
+        redirectUrl: `${process.env["FRONTEND_ORIGIN"]}/verify-email?code=${dbResponse._id}`,
       }),
     });
 
@@ -110,7 +167,7 @@ export const verifyUserEmailController = async (request, response) => {
       verificationCode
     );
     if (email_is_verified) {
-      return response.status(400).json({
+      return response.status(409).json({
         errorMessage: "Email is already verified",
         success: false,
         timestamp: new Date().toISOString(),
