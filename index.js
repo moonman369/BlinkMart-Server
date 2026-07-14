@@ -40,6 +40,11 @@ app.get("/", (request, response) => {
   });
 });
 
+// Lightweight liveness probe used by the Docker/Compose healthcheck.
+app.get("/health", (request, response) => {
+  return response.status(200).json({ status: "ok" });
+});
+
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/category", categoryRouter);
 app.use("/api/v1/subcategory", subCategoryRouter);
