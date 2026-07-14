@@ -53,12 +53,13 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/address", addressRouter);
 app.use("/api/v1/order", orderRouter);
 
-connectDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server is up and running on PORT: ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error("Stopping server, as Mongo Connection was unsuccessful...");
-  });
+// Start the HTTP server first so the liveness probe (/health) is always
+// reachable, then connect to Mongo. If the DB is unavailable the server stays
+// up instead of crash-looping, which keeps the container diagnosable via logs.
+app.listen(PORT, () => {
+  console.log(`Server is up and running on PORT: ${PORT}`);
+});
+
+connectDb().catch(() => {
+  console.error("Server is up but Mongo connection was unsuccessful...");
+});
