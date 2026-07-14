@@ -21,11 +21,11 @@ COPY --chown=node:node . .
 # Run as the built-in non-root user shipped with the official Node image.
 USER node
 
-# App reads SERVER_PORT (defaults to 8080 in index.js).
-EXPOSE 8080
+# App reads SERVER_PORT (defaults to 8081 in index.js).
+EXPOSE 8081
 
 # Alpine's Node image ships BusyBox wget (no curl) — use it for the probe.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:8080/health || exit 1
+  CMD wget -qO- http://localhost:8081/health || exit 1
 
 CMD ["node", "index.js"]

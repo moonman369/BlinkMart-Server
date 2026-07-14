@@ -31,7 +31,7 @@ app.use(
   })
 );
 
-const PORT = process.env["SERVER_PORT"] || 8080;
+const PORT = process.env["SERVER_PORT"] || 8081;
 
 app.get("/", (request, response) => {
   // console.log(request?.cookies["accessToken"]);
