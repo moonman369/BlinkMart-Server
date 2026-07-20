@@ -15,13 +15,22 @@ import addressRouter from "./routes/address.route.js";
 import orderRouter from "./routes/order.route.js";
 
 const app = express();
-app.use(
-  cors({
-    credentials: true,
-    origin: process.env["FRONTEND_ORIGIN"] ?? "*",
-  })
-);
-app.options("*", cors());
+
+// Behind Nginx (TLS terminated at the proxy): trust the proxy so req.secure /
+// req.protocol reflect the original HTTPS request.
+app.set("trust proxy", 1);
+
+// Credentialed cross-site requests: the origin MUST be the exact frontend
+// origin (never "*", which browsers reject when credentials are enabled).
+const corsOptions = {
+  origin: process.env["FRONTEND_ORIGIN"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.use(cors(corsOptions));
+// Answer preflight (OPTIONS) with the same credentialed CORS config.
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("combined"));
