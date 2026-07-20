@@ -45,14 +45,16 @@ const convertTimeToMs = (timeStr) => {
 };
 
 export const COOKIE_OPTIONS = {
-  domain:
-    process.env.NODE_ENV === ENV_PROD
-      ? process.env.FRONTEND_COOKIE_DOMAIN
-      : "localhost",
+  // No `domain` on purpose: let it default to the backend host so the cookie is
+  // host-only / first-party to this API. Hardcoding the frontend domain breaks
+  // cross-site delivery.
   path: "/",
-  httpOnly: false,
+  httpOnly: true,
+  // Cross-site cookies (frontend on Vercel, API on another domain) require
+  // sameSite:"none" + secure:true, which browsers only store over HTTPS. Local
+  // dev is plain http, so fall back to lax/insecure there.
   secure: process.env.NODE_ENV === ENV_PROD,
-  sameSite: process.env.NODE_ENV === ENV_PROD ? "None" : "Lax",
+  sameSite: process.env.NODE_ENV === ENV_PROD ? "none" : "lax",
 };
 
 export const ACCESS_TOKEN_COOKIE_OPTIONS = {
